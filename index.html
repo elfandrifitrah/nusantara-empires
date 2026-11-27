@@ -1,0 +1,2418 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+    <meta name="color-scheme" content="light dark" />
+    <script src="assets/three.min.js"></script>
+    <link rel="icon" href="data:," />
+    <title>Nusantara Empires</title>
+    <style>
+      :root{
+        --bg:#f4ecdc; --bg2:#eadfc6; --panel:#fbf6ea; --panel2:#f1e7cf;
+        --ink:#2b2118; --ink-soft:#5d4c38; --line:#c9b489;
+        --gold:#a87b12; --gold-bright:#c9a227; --terra:#a8431f; --terra-deep:#7e2f14;
+        --jungle:#3d5a34; --jungle-deep:#2c4426; --water:#2e6f79;
+        --red-chip:#7a1f1f; --ok:#33691e; --bad:#9c2b1b;
+        --hud-bg:rgba(43,33,24,.94); --hud-panel:rgba(62,48,33,.96); --hud-ink:#f3e9d2;
+        --hud-soft:#cdbb96; --hud-line:#8a6f42;
+        --shadow:0 10px 30px rgba(43,33,24,.25);
+        --radius:10px;
+      }
+      @media (prefers-color-scheme: dark){
+        :root{
+          --bg:#171310; --bg2:#1f1a15; --panel:#241d16; --panel2:#2c2318;
+          --ink:#f0e6cf; --ink-soft:#c4b28d; --line:#5d4a2c;
+          --gold:#d9b64a; --gold-bright:#e8c95c; --terra:#d0703f; --terra-deep:#a8431f;
+          --jungle:#7fae72; --jungle-deep:#4d7042; --water:#5aa7b3;
+          --shadow:0 10px 30px rgba(0,0,0,.5);
+        }
+      }
+      *{box-sizing:border-box}
+      html,body{height:100%; overflow-x:hidden; max-width:100%}
+      body{
+        margin:0; background:var(--bg); color:var(--ink);
+        font-family:"Spectral", Georgia, serif; font-size:16px; line-height:1.45;
+      }
+      button,[role="button"],select,summary,input:not([type="checkbox"],[type="radio"]){min-height:2.75rem}
+      button{font:inherit; cursor:pointer}
+      h1,h2,h3,.display{font-family:"Marcellus", "Spectral", serif; font-weight:400; letter-spacing:.02em}
+      .batik-edge{
+        height:10px;
+        background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='28' height='10' viewBox='0 0 28 10'%3E%3Cpath d='M0 10 L7 2 L14 10 L21 2 L28 10 Z' fill='%23a87b12' fill-opacity='0.55'/%3E%3C/svg%3E");
+        background-repeat:repeat-x; background-size:28px 10px;
+      }
+      /* ---------- generic screens ---------- */
+      .screen{display:none; min-height:100dvh; flex-direction:column}
+      .screen.active{display:flex}
+      .wrap{width:min(1120px,100%); margin:0 auto; padding:20px 16px 40px}
+      .lead{max-width:65ch}
+      .btn{
+        display:inline-flex; align-items:center; justify-content:center; gap:8px;
+        min-height:44px; padding:10px 18px; border-radius:8px;
+        border:1px solid var(--line); background:var(--panel); color:var(--ink);
+        font-family:"Marcellus",serif; font-size:1rem; text-decoration:none;
+      }
+      .btn:hover{border-color:var(--gold)}
+      .btn.primary{background:var(--terra); border-color:var(--terra-deep); color:#fdf3df}
+      .btn.primary:hover{background:var(--terra-deep)}
+      .btn.gold{background:var(--gold-bright); border-color:var(--gold); color:#2b2118}
+      .btn.small{min-height:40px; padding:6px 12px; font-size:.92rem}
+      .btn:disabled{opacity:.45; cursor:not-allowed}
+      .chip{
+        display:inline-block; padding:2px 9px; border-radius:999px; font-size:.78rem;
+        font-family:ui-sans-serif,system-ui,sans-serif; letter-spacing:.03em; vertical-align:middle;
+      }
+      .chip.fact{background:var(--jungle); color:#fff}
+      .chip.disputed{background:var(--red-chip); color:#fff}
+      .chip.whatif{background:var(--gold-bright); color:#2b2118}
+      .card{
+        background:var(--panel); border:1px solid var(--line); border-radius:var(--radius);
+        padding:16px; box-shadow:0 2px 8px rgba(43,33,24,.08);
+      }
+      .grid{display:grid; gap:14px}
+      @media(min-width:760px){ .grid.cols2{grid-template-columns:1fr 1fr} .grid.cols3{grid-template-columns:repeat(3,1fr)} .grid.cols4{grid-template-columns:repeat(4,1fr)} }
+      .muted{color:var(--ink-soft)}
+      .small{font-size:.9rem}
+      /* ---------- menu ---------- */
+      #screen-menu{background:
+        linear-gradient(180deg, rgba(23,19,16,.30), rgba(23,19,16,0) 340px),
+        radial-gradient(1100px 480px at 70% -80px, rgba(201,162,39,.28), transparent 60%),
+        var(--bg)}
+      .hero{padding:34px 0 8px}
+      .hero h1{font-size:clamp(2.4rem,6vw,4rem); margin:0 0 6px; line-height:1.05}
+      .hero .sub{font-size:clamp(1.05rem,2.4vw,1.3rem); max-width:56ch; margin:0}
+      .menu-actions{display:flex; flex-wrap:wrap; gap:10px; margin:22px 0 6px}
+      .faction-strip{display:grid; gap:10px; margin-top:18px}
+      @media(min-width:760px){.faction-strip{grid-template-columns:repeat(4,1fr)}}
+      .faction-mini{border:1px solid var(--line); border-radius:var(--radius); background:var(--panel); padding:12px}
+      .faction-mini h3{margin:0 0 2px; font-size:1.05rem}
+      .swatch{display:inline-block; width:12px; height:12px; border-radius:3px; margin-right:6px; vertical-align:-1px; border:1px solid rgba(0,0,0,.25)}
+      footer.site{margin-top:34px; border-top:1px solid var(--line); padding-top:14px}
+      footer.site a{color:var(--gold); text-underline-offset:3px}
+      /* ---------- mission / faction lists ---------- */
+      .mission-card{text-align:left; width:100%; display:block}
+      .mission-card h3{margin:0 0 4px}
+      .mission-card p{margin:4px 0}
+      .pick-card{text-align:left; width:100%; display:block}
+      .pick-card[aria-pressed="true"]{outline:3px solid var(--gold-bright); outline-offset:1px}
+      .topbar-row{display:flex; align-items:center; gap:10px; flex-wrap:wrap; margin-bottom:14px}
+      .topbar-row h2{margin:0; font-size:1.7rem}
+      .spacer{flex:1}
+      label.field{display:block; font-family:ui-sans-serif,system-ui,sans-serif; font-size:.85rem; color:var(--ink-soft); margin-bottom:10px}
+      select,input[type="text"]{
+        width:100%; padding:9px 10px; border-radius:8px; border:1px solid var(--line);
+        background:var(--panel); color:var(--ink); font:inherit; margin-top:4px;
+      }
+      /* ---------- brief ---------- */
+      .brief-facts{display:grid; gap:14px}
+      @media(min-width:820px){.brief-facts{grid-template-columns:1.4fr 1fr}}
+      .fact-list{margin:0; padding-left:20px}
+      .fact-list li{margin-bottom:8px}
+      /* ---------- codex ---------- */
+      .codex-list{display:grid; gap:10px}
+      @media(min-width:760px){.codex-list{grid-template-columns:1fr 1fr}}
+      .codex-item h3{margin:0 0 4px; font-size:1.1rem}
+      .codex-item p{margin:4px 0}
+      .source-note{border-top:1px dashed var(--line); margin-top:8px; padding-top:6px; font-size:.88rem; color:var(--ink-soft)}
+      /* ---------- game layout ---------- */
+      #screen-game{background:#141210; color:var(--hud-ink); height:100dvh; min-height:0}
+      #game-shell{display:flex; flex-direction:column; height:100dvh; width:100%; max-width:100%}
+      #top-hud{
+        display:flex; align-items:stretch; gap:8px; padding:6px 8px; max-width:100%;
+        background:var(--hud-bg); border-bottom:2px solid var(--hud-line); flex-wrap:wrap; z-index:5;
+      }
+      .res-group{display:flex; gap:4px; flex-wrap:wrap; align-items:center}
+      .res{
+        display:flex; align-items:center; gap:6px; min-height:40px; padding:4px 10px;
+        background:var(--hud-panel); border:1px solid var(--hud-line); border-radius:7px;
+        font-family:ui-sans-serif,system-ui,sans-serif; font-size:.92rem; min-width:92px;
+      }
+      .res .dot{width:11px; height:11px; border-radius:3px; flex:none}
+      .res b{font-variant-numeric:tabular-nums; font-weight:600}
+      .res .rate{color:var(--hud-soft); font-size:.78rem}
+      #age-panel{
+        margin-left:auto; display:flex; align-items:center; gap:8px; padding:4px 10px;
+        background:var(--hud-panel); border:1px solid var(--hud-line); border-radius:7px;
+      }
+      #age-panel .age-name{font-family:"Marcellus",serif; font-size:1rem; white-space:nowrap}
+      .hud-btn{
+        min-height:44px; min-width:44px; padding:8px 12px; border-radius:7px;
+        background:var(--hud-panel); color:var(--hud-ink); border:1px solid var(--hud-line);
+        font-family:"Marcellus",serif; font-size:.95rem;
+      }
+      .hud-btn:hover{border-color:var(--gold-bright)}
+      #btn-age{background:var(--terra); border-color:var(--terra-deep); color:#fdf3df}
+      #btn-age:disabled{opacity:.45}
+      #stage{position:relative; flex:1; min-height:0; overflow:hidden; background:#22331d; max-width:100%}
+      #map{position:absolute; inset:0; width:100%; height:100%; display:block; touch-action:none; z-index:2}
+      #sel-box{position:absolute; z-index:3; border:1.5px solid var(--gold-bright); background:rgba(201,162,39,.14); display:none; pointer-events:none}
+      #objective-card{
+        position:absolute; top:10px; left:10px; max-width:min(320px,72vw); z-index:4;
+        background:var(--hud-bg); border:1px solid var(--hud-line); border-radius:9px; padding:10px 12px;
+      }
+      #objective-card h3{margin:0 0 3px; font-size:1rem; color:var(--gold-bright)}
+      #objective-card p{margin:2px 0; font-size:.88rem; font-family:ui-sans-serif,system-ui,sans-serif}
+      #alert-strip{
+        position:absolute; top:10px; left:50%; transform:translateX(-50%); z-index:4;
+        display:flex; flex-direction:column; gap:6px; align-items:center; pointer-events:none; width:max-content; max-width:92vw;
+      }
+      .alert{
+        background:rgba(122,31,31,.93); color:#fff; border-radius:7px; padding:7px 14px;
+        font-family:ui-sans-serif,system-ui,sans-serif; font-size:.88rem; box-shadow:var(--shadow);
+        animation:alert-in .25s ease-out;
+      }
+      .alert.good{background:rgba(51,105,30,.94)}
+      .alert.info{background:rgba(43,33,24,.92); border:1px solid var(--hud-line)}
+      @keyframes alert-in{from{opacity:0; transform:translateY(-6px)} to{opacity:1; transform:none}}
+      @media (prefers-reduced-motion: reduce){ .alert{animation:none} }
+      #build-banner{
+        position:absolute; bottom:64px; left:50%; transform:translateX(-50%); z-index:4; display:none; pointer-events:none;
+        background:var(--hud-bg); border:1px solid var(--gold-bright); color:var(--hud-ink);
+        border-radius:8px; padding:8px 14px; font-family:ui-sans-serif,system-ui,sans-serif; font-size:.9rem;
+      }
+      /* bottom HUD */
+      #bottom-hud{
+        display:grid; grid-template-columns:250px 1fr 196px; gap:8px; padding:8px; max-width:100%;
+        background:var(--hud-bg); border-top:2px solid var(--hud-line); z-index:5;
+      }
+      #selection-card{
+        background:var(--hud-panel); border:1px solid var(--hud-line); border-radius:9px; padding:9px 11px; min-height:118px;
+      }
+      #selection-card h3{margin:0 0 2px; font-size:1rem; color:var(--gold-bright)}
+      #selection-card p{margin:2px 0; font-size:.85rem; font-family:ui-sans-serif,system-ui,sans-serif}
+      .hpbar{height:8px; background:#191410; border-radius:4px; overflow:hidden; margin:5px 0; border:1px solid rgba(0,0,0,.4)}
+      .hpbar > div{height:100%; background:#7fae4c; transition:width .2s}
+      .hpbar > div.low{background:#c0452c}
+      #queue-row{display:flex; gap:5px; margin-top:6px; flex-wrap:wrap}
+      .queue-slot{
+        width:34px; height:34px; border-radius:6px; border:1px solid var(--hud-line);
+        display:flex; align-items:center; justify-content:center; font-size:.72rem;
+        font-family:ui-sans-serif,system-ui,sans-serif; background:#241c12; position:relative; overflow:hidden;
+      }
+      .queue-slot .fill{position:absolute; left:0; bottom:0; width:100%; background:rgba(201,162,39,.4)}
+      .queue-slot span{position:relative}
+      #command-grid{display:grid; grid-template-columns:repeat(auto-fill,minmax(104px,1fr)); gap:6px; align-content:start}
+      .cmd{
+        min-height:52px; padding:6px 8px; border-radius:8px; text-align:left;
+        background:var(--hud-panel); color:var(--hud-ink); border:1px solid var(--hud-line);
+        font-family:ui-sans-serif,system-ui,sans-serif;
+      }
+      .cmd:hover:not(:disabled){border-color:var(--gold-bright)}
+      .cmd:disabled{opacity:.42; cursor:not-allowed}
+      .cmd .cmd-name{display:block; font-family:"Marcellus",serif; font-size:.95rem; line-height:1.15}
+      .cmd .cmd-cost{display:block; font-size:.75rem; color:var(--hud-soft); margin-top:2px}
+      .cmd.armed{outline:2px solid var(--gold-bright); outline-offset:1px}
+      #minimap-box{background:var(--hud-panel); border:1px solid var(--hud-line); border-radius:9px; padding:6px; text-align:center}
+      #minimap{display:block; width:180px; height:132px; margin:0 auto; border-radius:5px; background:#22331d; cursor:pointer}
+      #minimap-box .mm-label{font-size:.75rem; color:var(--hud-soft); font-family:ui-sans-serif,system-ui,sans-serif; margin-top:4px}
+      .res .ric{width:17px; height:17px; flex:none}
+      .cmd .cmd-icon{display:inline-flex; width:22px; height:22px; align-items:center; justify-content:center; border-radius:6px; background:rgba(201,162,39,.22); font-size:.95rem; margin-right:6px; vertical-align:-5px}
+      .cmd{min-height:58px}
+      #hint-bar{
+        position:absolute; left:50%; transform:translateX(-50%); bottom:10px; z-index:4; pointer-events:none;
+        display:flex; align-items:center; gap:9px; max-width:min(620px,94vw);
+        background:rgba(23,32,18,.94); border:1px solid var(--gold-bright); border-radius:9px;
+        padding:8px 13px; font-family:ui-sans-serif,system-ui,sans-serif; font-size:.92rem; color:#f3e9d2;
+      }
+      #hint-bar .hint-tag{background:var(--gold-bright); color:#2b2118; border-radius:5px; padding:2px 8px; font-weight:700; font-size:.78rem; white-space:nowrap}
+      #guide-card{
+        position:absolute; top:10px; right:10px; z-index:4; width:min(252px,80vw); display:none;
+        background:var(--hud-bg); border:1px solid var(--gold-bright); border-radius:9px; padding:10px 12px;
+        font-family:ui-sans-serif,system-ui,sans-serif;
+      }
+      #guide-card.show{display:block}
+      #guide-card h3{margin:0 0 5px; font-size:.98rem; color:var(--gold-bright)}
+      #guide-card ol{margin:0; padding-left:19px; font-size:.85rem}
+      #guide-card li{margin:3px 0; color:var(--hud-soft)}
+      #guide-card li.now{color:#fff; font-weight:700}
+      #guide-card li.done{color:#9ccc65; text-decoration:line-through}
+      #guide-card button{margin-top:7px}
+      .view-btns{display:flex; gap:4px; justify-content:center; margin-top:5px}
+      .view-btns button{min-height:36px; min-width:36px; padding:3px 8px; border-radius:6px; background:#241c12; color:var(--hud-ink); border:1px solid var(--hud-line); font-size:.85rem}
+      #hero-3d-wrap{position:relative; border-radius:14px; overflow:hidden; margin-top:8px; border:1px solid var(--line); box-shadow:var(--shadow); max-width:100%}
+      #hero-3d{display:block; width:100%; max-width:100%; height:300px; background:#2c4426}
+      #hero-3d-wrap .hero-overlay{position:absolute; left:0; right:0; bottom:0; padding:12px 16px; background:linear-gradient(180deg, transparent, rgba(16,20,10,.82)); color:#f3e9d2}
+      #hero-3d-wrap .hero-overlay p{margin:0; font-size:.95rem}
+      .faction-mini .ficon{display:inline-flex; width:30px; height:30px; border-radius:9px; align-items:center; justify-content:center; color:#fff; font-family:"Marcellus",serif; font-size:1.05rem; margin-bottom:6px}
+      @media(max-width:900px){ #guide-card{display:none} #guide-card.show{display:none} #hero-3d{height:210px}
+        #hint-bar{width:calc(100vw - 16px); font-size:.85rem} }
+      @media(max-width:900px){
+        #bottom-hud{grid-template-columns:1fr 170px; grid-template-rows:auto auto}
+        #selection-card{grid-column:1}
+        #command-grid{grid-column:1 / -1; order:3}
+        #minimap-box{grid-column:2; grid-row:1}
+        #minimap{width:150px; height:110px}
+        .res{min-width:0; font-size:.85rem; padding:4px 7px}
+        #objective-card{display:none}
+        #objective-card.show{display:block}
+      }
+      /* ---------- overlays ---------- */
+      .overlay{
+        position:fixed; inset:0; z-index:40; display:none; align-items:flex-start; justify-content:center;
+        background:rgba(16,12,8,.72); overflow:auto; padding:18px 12px;
+      }
+      .overlay.open{display:flex}
+      .overlay .sheet{
+        background:var(--panel); color:var(--ink); border:1px solid var(--line); border-radius:12px;
+        width:min(860px,100%); padding:20px; box-shadow:var(--shadow); margin:auto 0;
+      }
+      .overlay .sheet h2{margin-top:0}
+      .overlay .row{display:flex; gap:10px; flex-wrap:wrap; margin-top:16px}
+      .kbd{
+        font-family:ui-monospace,Menlo,monospace; font-size:.82rem; background:var(--panel2);
+        border:1px solid var(--line); border-bottom-width:2px; border-radius:5px; padding:1px 6px;
+      }
+      table.controls{border-collapse:collapse; width:100%}
+      table.controls td{padding:6px 8px; border-bottom:1px solid var(--line); vertical-align:top}
+      table.controls td:first-child{white-space:nowrap; width:170px}
+      .result-big{font-size:2rem; margin:0}
+      .stat-row{display:flex; gap:18px; flex-wrap:wrap; font-family:ui-sans-serif,system-ui,sans-serif}
+      .stat-row div b{display:block; font-size:1.3rem}
+      .sr-only{position:absolute; width:1px; height:1px; overflow:hidden; clip:rect(0 0 0 0); white-space:nowrap}
+    </style>
+  </head>
+  <body>
+    <!-- ======================= MAIN MENU ======================= -->
+    <section class="screen active" id="screen-menu" aria-label="Main menu">
+      <div class="batik-edge" aria-hidden="true"></div>
+      <div class="wrap">
+        <div class="hero">
+          <h1>Nusantara Empires</h1>
+          <p class="sub">A real-time strategy game of the kingdoms of the Indonesian archipelago. Gather rice, wood, gold and stone. Build a court. Train an army. Hold the trade routes.</p>
+        </div>
+        <div id="hero-3d-wrap" aria-hidden="true">
+          <canvas id="hero-3d" width="1120" height="300"></canvas>
+          <div class="hero-overlay"><p>The 3D map. Hills, rivers, stone temples and faction banners. Drag in a match to pan. Use the wheel to zoom. Press Q and E to turn the view.</p></div>
+        </div>
+        <div class="menu-actions">
+          <button class="btn primary" id="menu-btn-campaign" type="button">Play campaign</button>
+          <button class="btn" id="menu-btn-skirmish" type="button">Play skirmish</button>
+          <button class="btn" id="menu-btn-codex" type="button">Open codex</button>
+          <button class="btn" id="menu-btn-how" type="button">How to play</button>
+        </div>
+        <p class="muted lead">Eight factions stand ready. Each mission follows a real event. Notes mark each fact that sources dispute. You can win in play. History keeps its own end.</p>
+
+        <h2 style="margin:26px 0 4px">The eight factions</h2>
+        <div class="faction-strip" id="menu-factions"></div>
+
+        <h2 style="margin:30px 0 4px">The arc of the game</h2>
+        <div class="grid cols3">
+          <div class="card">
+            <h3 style="margin-top:0">Four ages</h3>
+            <p class="small">Age I is the Village Age. Age II is the Temple Age. Age III is the Kingdom Age. Age IV is the Empire Age. Each age opens new buildings and new units.</p>
+          </div>
+          <div class="card">
+            <h3 style="margin-top:0">Five beats in each match</h3>
+            <p class="small">Gather. Build. Train. Fight or trade. Advance the age. The loop is short. The loop is the game.</p>
+          </div>
+          <div class="card">
+            <h3 style="margin-top:0">Europe enters late</h3>
+            <p class="small">The Portuguese reach Malacca in 1511. The Dutch form the VOC in 1602. The English trade from Bantam. Late missions put these powers on the map.</p>
+          </div>
+        </div>
+
+        <footer class="site small muted">
+          <p>Text uses ASD-STE100. Sentences stay short. Words stay simple. The codex lists the source for each entry. Disputed facts carry a red Disputed chip.</p>
+          <p>Source code and design plan: <a href="https://github.com/elfandrifitrah" target="_blank" rel="noopener">github.com/elfandrifitrah</a>. The stack is free. The game runs in a web browser on Mac and PC. After the first load, single player and the codex work offline.</p>
+        </footer>
+      </div>
+    </section>
+
+    <!-- ======================= CAMPAIGN LIST ======================= -->
+    <section class="screen" id="screen-missions" aria-label="Campaign missions">
+      <div class="batik-edge" aria-hidden="true"></div>
+      <div class="wrap">
+        <div class="topbar-row">
+          <button class="btn small" data-nav="menu" type="button">Back</button>
+          <h2>Campaign</h2>
+        </div>
+        <p class="lead muted">Each mission is one real event. Read the brief before you play. The brief gives the facts, the goal, and the notes that sources dispute.</p>
+        <div class="grid cols2" id="mission-list" style="margin-top:16px"></div>
+      </div>
+    </section>
+
+    <!-- ======================= SKIRMISH SETUP ======================= -->
+    <section class="screen" id="screen-skirmish" aria-label="Skirmish setup">
+      <div class="batik-edge" aria-hidden="true"></div>
+      <div class="wrap">
+        <div class="topbar-row">
+          <button class="btn small" data-nav="menu" type="button">Back</button>
+          <h2>Skirmish</h2>
+        </div>
+        <p class="lead muted">Pick your faction. Pick the enemy faction. Pick the map. Goal: destroy the enemy Kraton before the enemy destroys yours.</p>
+        <h3>Your faction</h3>
+        <div class="grid cols4" id="skirmish-factions"></div>
+        <div class="grid cols2" style="margin-top:16px">
+          <div class="card">
+            <label class="field">Enemy faction
+              <select id="skirmish-enemy"></select>
+            </label>
+            <label class="field">Map
+              <select id="skirmish-map">
+                <option value="river">River plain. Two crossings. Rich gold at the centre.</option>
+                <option value="coast">Coast. One lake. Trees are dense in the south.</option>
+                <option value="hills">High hills. Stone is rich. Gold is far.</option>
+              </select>
+            </label>
+            <label class="field">Enemy strength
+              <select id="skirmish-level">
+                <option value="0.8">Calm. The enemy attacks late.</option>
+                <option value="1" selected>Standard. The enemy attacks in waves.</option>
+                <option value="1.3">Hard. The enemy attacks early and often.</option>
+              </select>
+            </label>
+            <button class="btn primary" id="skirmish-start" type="button">Start match</button>
+          </div>
+          <div class="card" id="skirmish-detail"></div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ======================= MISSION BRIEF ======================= -->
+    <section class="screen" id="screen-brief" aria-label="Mission brief">
+      <div class="batik-edge" aria-hidden="true"></div>
+      <div class="wrap">
+        <div class="topbar-row">
+          <button class="btn small" data-nav="missions" type="button">Back</button>
+          <h2 id="brief-title">Brief</h2>
+          <span class="spacer"></span>
+          <button class="btn primary" id="brief-start" type="button">Start mission</button>
+        </div>
+        <div class="brief-facts">
+          <div class="card">
+            <h3 style="margin-top:0">The facts</h3>
+            <ul class="fact-list" id="brief-facts"></ul>
+          </div>
+          <div>
+            <div class="card" style="margin-bottom:14px">
+              <h3 style="margin-top:0">Your goal</h3>
+              <p id="brief-goal" style="margin:0"></p>
+              <p class="small muted" id="brief-lose" style="margin-bottom:0"></p>
+            </div>
+            <div class="card">
+              <h3 style="margin-top:0">Sides</h3>
+              <p id="brief-sides" style="margin:0"></p>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ======================= GAME ======================= -->
+    <section class="screen" id="screen-game" aria-label="Game">
+      <div id="game-shell">
+        <div id="top-hud">
+          <div class="res-group" role="group" aria-label="Resources">
+            <div class="res" title="Rice. Villagers gather rice from rice fields and farms."><svg class="ric" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 22 V9" stroke="#8bc34a" stroke-width="2" fill="none"/><path d="M12 9 C8 9 5 6 5 2 C9 2 12 5 12 9 Z M12 9 C16 9 19 6 19 2 C15 2 12 5 12 9 Z M12 14 C9 14 6 12 6 8 C9 8 12 11 12 14 Z M12 14 C15 14 18 12 18 8 C15 8 12 11 12 14 Z" fill="#a9c96e"/></svg>Rice <b id="res-rice">0</b><span class="rate" id="rate-rice"></span></div>
+            <div class="res" title="Wood. Villagers gather wood from trees."><svg class="ric" viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="13" width="18" height="5" rx="2.5" fill="#8d6e63"/><rect x="5" y="6" width="16" height="5" rx="2.5" fill="#a1887f"/><circle cx="6" cy="15.5" r="1.6" fill="#d7ccc8"/><circle cx="8" cy="8.5" r="1.6" fill="#d7ccc8"/></svg>Wood <b id="res-wood">0</b><span class="rate" id="rate-wood"></span></div>
+            <div class="res" title="Gold. Villagers gather gold from gold mines. The Market adds gold from trade."><svg class="ric" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="8" fill="#e3b93c" stroke="#a87b12" stroke-width="2"/><circle cx="12" cy="12" r="4.5" fill="none" stroke="#a87b12" stroke-width="1.6"/></svg>Gold <b id="res-gold">0</b><span class="rate" id="rate-gold"></span></div>
+            <div class="res" title="Stone. Villagers gather stone from stone piles."><svg class="ric" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 18 L8 7 L14 4 L20 10 L19 18 Z" fill="#9e9e9e" stroke="#616161" stroke-width="1.6"/><path d="M8 7 L12 18 M14 4 L12 18" stroke="#616161" stroke-width="1.2" fill="none"/></svg>Stone <b id="res-stone">0</b><span class="rate" id="rate-stone"></span></div>
+            <div class="res" title="People. The first number is people in use. The second number is the cap. Houses raise the cap."><svg class="ric" viewBox="0 0 24 24" aria-hidden="true"><circle cx="9" cy="8" r="3.4" fill="#d0703f"/><path d="M3 20 C3 15 6 13 9 13 C12 13 15 15 15 20 Z" fill="#d0703f"/><circle cx="17" cy="9" r="2.6" fill="#e09a6c"/><path d="M15 20 C15 16 17 14.4 19 14.4 C20.6 14.4 22 16 22 20 Z" fill="#e09a6c"/></svg>People <b id="res-pop">0/0</b></div>
+            <div class="res" title="Match time. In a survive mission the clock counts down."><svg class="ric" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="13" r="8" fill="none" stroke="#5aa7b3" stroke-width="2"/><path d="M12 9 V13 L15 15 M10 3 H14" stroke="#5aa7b3" stroke-width="2" fill="none"/></svg>Time <b id="res-time">0:00</b></div>
+          </div>
+          <div id="age-panel">
+            <span class="age-name" id="age-name">Age I · Village</span>
+            <button class="hud-btn" id="btn-age" type="button">Advance age</button>
+          </div>
+          <button class="hud-btn" id="btn-objective" type="button">Goal</button>
+          <button class="hud-btn" id="btn-codex" type="button">Codex</button>
+          <button class="hud-btn" id="btn-sound" type="button" aria-pressed="true">Sound on</button>
+          <button class="hud-btn" id="btn-pause" type="button">Pause</button>
+        </div>
+
+        <div id="stage">
+          <canvas id="map" aria-label="Game map. Use mouse or touch to select and command units."></canvas>
+          <div id="sel-box" aria-hidden="true"></div>
+          <div id="objective-card">
+            <h3 id="obj-title">Goal</h3>
+            <p id="obj-text"></p>
+            <p id="obj-progress"></p>
+          </div>
+          <div id="alert-strip" aria-live="polite"></div>
+          <div id="guide-card" aria-label="Guide steps">
+            <h3>First steps</h3>
+            <ol id="guide-steps">
+              <li data-step="0">Select a villager. Click one person near the Kraton.</li>
+              <li data-step="1">Gather rice. Right-click a green rice field.</li>
+              <li data-step="2">Build a House. Use the command grid. Place it on clear land.</li>
+              <li data-step="3">Train a villager. Select the Kraton. Click Train Villager.</li>
+              <li data-step="4">Attack. Select a spearman. Right-click a foe.</li>
+            </ol>
+            <button class="hud-btn" id="guide-hide" type="button">Hide guide</button>
+          </div>
+          <div id="hint-bar" role="status"><span class="hint-tag">Next step</span><span id="hint-text">Click a villager near the Kraton to select it.</span></div>
+          <div id="build-banner">Click the map to place the building. The ghost is green on a fit place and red on a blocked place. Right-click to cancel.</div>
+        </div>
+
+        <div id="bottom-hud">
+          <div id="selection-card" aria-live="polite">
+            <h3>Nothing selected</h3>
+            <p>Click a unit or a building. Drag to select a group of units.</p>
+          </div>
+          <div id="command-grid" role="group" aria-label="Commands"></div>
+          <div id="minimap-box">
+            <canvas id="minimap" width="360" height="264" aria-label="Minimap. Click to move the camera."></canvas>
+            <div class="mm-label">Minimap. Click to move the view.</div>
+            <div class="view-btns" role="group" aria-label="View controls">
+              <button type="button" id="view-rot-l" title="Turn the view left. Key Q.">Turn left</button>
+              <button type="button" id="view-rot-r" title="Turn the view right. Key E.">Turn right</button>
+              <button type="button" id="view-zoom-in" title="Zoom in. Mouse wheel up also zooms in.">Zoom +</button>
+              <button type="button" id="view-zoom-out" title="Zoom out. Mouse wheel down also zooms out.">Zoom −</button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ======================= CODEX OVERLAY ======================= -->
+    <div class="overlay" id="overlay-codex" role="dialog" aria-modal="true" aria-label="Codex">
+      <div class="sheet">
+        <div class="topbar-row">
+          <h2 style="margin:0">Codex</h2>
+          <span class="spacer"></span>
+          <button class="btn small" data-close="overlay-codex" type="button">Close</button>
+        </div>
+        <p class="muted" style="margin-top:0">Facts about the kingdoms, the temples, the scripts, the trade goods and the wars. A red Disputed chip marks a fact that sources do not agree on. Each entry names its source.</p>
+        <label class="field">Search the codex
+          <input type="text" id="codex-search" placeholder="Try: temple, pepper, script, VOC" />
+        </label>
+        <div class="codex-list" id="codex-list"></div>
+      </div>
+    </div>
+
+    <!-- ======================= HOW TO PLAY OVERLAY ======================= -->
+    <div class="overlay" id="overlay-how" role="dialog" aria-modal="true" aria-label="How to play">
+      <div class="sheet">
+        <div class="topbar-row">
+          <h2 style="margin:0">How to play</h2>
+          <span class="spacer"></span>
+          <button class="btn small" data-close="overlay-how" type="button">Close</button>
+        </div>
+        <table class="controls">
+          <tr><td>Select a unit</td><td>Click the unit. Drag a box to select a group.</td></tr>
+          <tr><td>Give an order</td><td>Right-click the target. A right-click on a tree, a mine or a field sends a villager to gather. A right-click on a foe sends soldiers to attack.</td></tr>
+          <tr><td>Touch order</td><td>Tap a unit to select it. Then tap the target. The game reads the second tap as the order.</td></tr>
+          <tr><td>Build</td><td>Select a villager. Click a building in the command grid. Click the map to place it.</td></tr>
+          <tr><td>Train</td><td>Select the Kraton or the Barracks. Click the unit in the command grid.</td></tr>
+          <tr><td>Move the camera</td><td>Use <span class="kbd">W</span> <span class="kbd">A</span> <span class="kbd">S</span> <span class="kbd">D</span> or the arrow keys. Move the mouse to the screen edge. Or click the minimap.</td></tr>
+          <tr><td>Zoom and turn</td><td>Use the mouse wheel to zoom. Press <span class="kbd">Q</span> and <span class="kbd">E</span> to turn the view. Drag with the middle mouse button to turn. The buttons under the minimap do the same acts.</td></tr>
+          <tr><td>Next step hint</td><td>A gold bar at the foot of the map states the next step. Mission 1 adds a step list at the top right of the map.</td></tr>
+          <tr><td>Place a building</td><td>The ghost shows the building place. Green means the place fits. Red means the place is blocked.</td></tr>
+          <tr><td>Hotkeys</td><td><span class="kbd">H</span> selects the Kraton. <span class="kbd">.</span> selects an idle villager. <span class="kbd">Esc</span> cancels or pauses. <span class="kbd">Space</span> pauses.</td></tr>
+          <tr><td>Advance the age</td><td>Click Advance age in the top bar. A new age needs rice and gold. A new age opens new buildings and units.</td></tr>
+        </table>
+        <h3>The economy</h3>
+        <p>Villagers gather four goods. Rice comes from rice fields and farms. Wood comes from trees. Gold comes from gold mines. Stone comes from stone piles. Houses raise the people cap. The Kraton trains villagers. The Barracks trains soldiers. The Temple trains the war elephant. An age rite from Age III on needs a Temple. The Tower guards a place. The Market gives a slow gold income from trade.</p>
+        <h3>Win and lose</h3>
+        <p>Each mission states one clear goal. You lose if the enemy destroys your Kraton. In a skirmish, you win if you destroy the enemy Kraton.</p>
+      </div>
+    </div>
+
+    <!-- ======================= PAUSE OVERLAY ======================= -->
+    <div class="overlay" id="overlay-pause" role="dialog" aria-modal="true" aria-label="Pause">
+      <div class="sheet" style="width:min(480px,100%)">
+        <h2>Paused</h2>
+        <p class="muted">The match waits. No time passes.</p>
+        <div class="row">
+          <button class="btn primary" id="pause-resume" type="button">Resume</button>
+          <button class="btn" id="pause-restart" type="button">Restart match</button>
+          <button class="btn" id="pause-quit" type="button">Quit to menu</button>
+        </div>
+        <div class="row">
+          <button class="btn small" id="pause-how" type="button">How to play</button>
+          <button class="btn small" id="pause-codex" type="button">Open codex</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- ======================= RESULT OVERLAY ======================= -->
+    <div class="overlay" id="overlay-result" role="dialog" aria-modal="true" aria-label="Match result">
+      <div class="sheet" style="width:min(560px,100%)">
+        <h2 class="result-big" id="result-title">Victory</h2>
+        <p id="result-text"></p>
+        <div class="card" style="margin:14px 0">
+          <h3 style="margin-top:0">The history note</h3>
+          <p id="result-history" style="margin-bottom:0"></p>
+        </div>
+        <div class="stat-row" id="result-stats"></div>
+        <div class="row">
+          <button class="btn primary" id="result-again" type="button">Play again</button>
+          <button class="btn" id="result-menu" type="button">Back to menu</button>
+        </div>
+      </div>
+    </div>
+
+    <script>
+    "use strict";
+    /* ============================================================
+       NUSANTARA EMPIRES — data
+       Text follows ASD-STE100: short sentences, simple words.
+       Facts carry a source. Disputed facts carry a note.
+       ============================================================ */
+
+    var AGES = [
+      { n: 1, name: "Village", cost: null },
+      { n: 2, name: "Temple",  cost: { rice: 300, gold: 100 } },
+      { n: 3, name: "Kingdom", cost: { rice: 600, gold: 300 } },
+      { n: 4, name: "Empire",  cost: { rice: 1000, gold: 600 } }
+    ];
+
+    var FACTIONS = [
+      { id:"srivijaya", name:"Srivijaya", capital:"Palembang, Sumatra", era:"c. 650 to 1377",
+        color:"#1f7a8c", dark:"#14505e",
+        bonusText:"Gold income is 25 percent higher. The strait trade feeds the court.",
+        bonus:{ goldRate:1.25 },
+        blurb:"A sea empire. It holds the Malacca Strait. Ships pay tax at its ports. Monks from China and India study at its schools." },
+      { id:"mataram", name:"Mataram Medang", capital:"Central and East Java", era:"c. 717 to 1016",
+        color:"#8a6d1f", dark:"#5d4a14",
+        bonusText:"The Wonder costs 25 percent less stone. Temple builders work fast.",
+        bonus:{ wonderStone:0.75 },
+        blurb:"A land of rice and stone temples. Its kings raise Borobudur and Prambanan. Its farms feed a dense court." },
+      { id:"majapahit", name:"Majapahit", capital:"Trowulan, East Java", era:"1293 to c. 1527",
+        color:"#b03a1e", dark:"#7e2a14",
+        bonusText:"Foot soldiers hit 15 percent harder. The army of Gajah Mada sets the pace.",
+        bonus:{ infantryAtk:1.15 },
+        blurb:"An empire of ports and rice lands. Gajah Mada is mahapatih from 1334 to 1364. Its ships reach across the archipelago." },
+      { id:"sunda", name:"Sunda", capital:"Pakuan Pajajaran, West Java", era:"669 to 1579",
+        color:"#3d7a3a", dark:"#2a5527",
+        bonusText:"Rice income is 25 percent higher. The wet fields of the west yield well.",
+        bonus:{ riceRate:1.25 },
+        blurb:"A kingdom of pepper ports and rice fields. Its kings hold the west of Java. Its port at Sunda Kelapa trades with many lands." },
+      { id:"demak", name:"Demak", capital:"Demak, Central Java", era:"1475 to 1554",
+        color:"#2e7d5b", dark:"#1e5740",
+        bonusText:"Villagers cost 20 percent less rice. New settlers join the coast towns fast.",
+        bonus:{ villagerCost:0.8 },
+        blurb:"The first Islamic sultanate of Java. Traders and teachers shape its court. Its mosque stands on carved teak pillars." },
+      { id:"aceh", name:"Aceh", capital:"Banda Aceh, Sumatra", era:"1496 to 1903",
+        color:"#7a4a8c", dark:"#573463",
+        bonusText:"Archers and gunners hit 20 percent harder. Gun founders work at the court.",
+        bonus:{ rangedAtk:1.2 },
+        blurb:"A sultanate rich in pepper and gold. It fights the Portuguese and the Dutch at sea. Its sultans trade with the Ottoman world." },
+      { id:"banten", name:"Banten", capital:"Banten, West Java", era:"1527 to 1813",
+        color:"#a87b12", dark:"#7a580c",
+        bonusText:"Market gold income is twice the normal rate. Pepper draws ships to the port.",
+        bonus:{ marketRate:2 },
+        blurb:"A pepper port of the first rank. Traders from China, India and Europe fill its market. It resists the VOC for a long time." },
+      { id:"gowa", name:"Gowa-Tallo", capital:"Makassar, Sulawesi", era:"c. 1300 to 1669",
+        color:"#4a6fa5", dark:"#33507a",
+        bonusText:"War elephants cost 25 percent less gold. Horse and elephant yards are strong.",
+        bonus:{ elephantCost:0.75 },
+        blurb:"Twin kingdoms at Makassar. Their ships rule the eastern seas. Sultan Hasanuddin fights the VOC in the Makassar War." }
+    ];
+    function factionById(id){ for (var i=0;i<FACTIONS.length;i++) if (FACTIONS[i].id===id) return FACTIONS[i]; return FACTIONS[0]; }
+
+    /* ---------------- missions ---------------- */
+    var MISSIONS = [
+      { id:"m1", title:"Mission 1 · Lord of the Strait", year:"c. 700", map:"river",
+        player:"srivijaya", enemy:"sunda", enemyName:"a rival river chief",
+        goalType:"wealth", goalGold:700, goalAge:2, level:0.8,
+        goalText:"Stockpile 700 gold from trade and reach Age II, the Temple Age.",
+        facts:[
+          "Srivijaya rises at Palembang in the late 600s. The city sits on the Musi River.",
+          "The monk I Tsing stays in Srivijaya in 671. He writes that more than 1,000 monks study there.",
+          "Ships pass the Malacca Strait on the monsoon winds. Srivijaya taxes the ships and guards the strait.",
+          "Inscriptions in Old Malay use a South Indian script. The Kedukan Bukit stone dates to 682."
+        ],
+        dispute:"The first capital is a point of dispute. Most scholars place it at Palembang. Some place an early centre near Jambi.",
+        history:"Srivijaya holds the strait trade for about 600 years. Its power fades in the 1200s as Jambi and Java rise." },
+      { id:"m2", title:"Mission 2 · Raise Borobudur", year:"c. 825", map:"hills",
+        player:"mataram", enemy:"sunda", enemyName:"hill raiders",
+        goalType:"wonder", level:0.85,
+        goalText:"Build the Wonder. The Wonder is Borobudur, a great stone temple. Defend the builders.",
+        facts:[
+          "Builders raise Borobudur in Central Java in about 780 to 825. The Sailendra line rules at that time.",
+          "The temple has nine stacked levels. Six levels are square. Three levels are round.",
+          "Walls hold 2,672 relief panels. The panels tell stories from Buddhist texts.",
+          "A hidden base lies under the temple. Scholars find the base in 1885."
+        ],
+        dispute:"The name of the king who starts Borobudur is a point of dispute. Sources name Samaratungga in many accounts. No inscription on the temple names the king.",
+        history:"Borobudur stays in use for about two centuries. Ash and jungle cover it. Thomas Stamford Raffles orders a clean-up in 1814." },
+      { id:"m3", title:"Mission 3 · The Mongol Trap", year:"1293", map:"river",
+        player:"majapahit", enemy:"sunda", enemyName:"the Yuan expedition camp",
+        goalType:"destroy", level:0.95,
+        goalText:"Destroy the enemy Kraton. The camp stands for the Yuan expedition force.",
+        facts:[
+          "Kublai Khan sends a fleet to Java in 1293. The fleet punishes King Kertanagara of Singhasari. Kertanagara is dead before the fleet lands.",
+          "Raden Wijaya is the son-in-law of Kertanagara. He joins the Yuan force. He uses the force to defeat Jayakatwang.",
+          "Raden Wijaya then turns on the Yuan force. The Yuan fleet sails home.",
+          "Raden Wijaya founds Majapahit in 1293. He takes the throne name Kertarajasa."
+        ],
+        dispute:"The size of the Yuan fleet is a point of dispute. Chinese records give high numbers. Modern scholars give lower numbers.",
+        history:"Majapahit grows from this start. Under Hayam Wuruk and Gajah Mada, it claims ports across the archipelago." },
+      { id:"m4", title:"Mission 4 · The Field of Bubat", year:"1357", map:"coast",
+        player:"sunda", enemy:"majapahit", enemyName:"the Majapahit escort force",
+        goalType:"survive", goalTime:360, level:1,
+        goalText:"Survive for 6 minutes. Keep the Kraton of Pajajaran safe.",
+        facts:[
+          "In 1357 a Sunda royal party travels to Majapahit. The princess Dyah Pitaloka is to marry King Hayam Wuruk.",
+          "The party camps at Bubat field, near the Majapahit capital.",
+          "A fight starts at Bubat. The Sunda king and the princess die at the field.",
+          "Gajah Mada is mahapatih of Majapahit at the time."
+        ],
+        dispute:"The cause of the fight is a point of dispute. The Pararaton and the Kidung Sunda tell the event in different ways. The two texts blame different sides.",
+        history:"Sunda and Majapahit stay apart after Bubat. The event lives on in Sundanese memory as a wound between the two peoples." },
+      { id:"m5", title:"Mission 5 · The New Sultanate", year:"c. 1500", map:"coast",
+        player:"demak", enemy:"majapahit", enemyName:"the old court of Daha",
+        goalType:"destroy", level:1,
+        goalText:"Destroy the enemy Kraton. The old court loses the coast.",
+        facts:[
+          "Demak rises on the north coast of Java in the late 1400s. Raden Patah is its first ruler in most accounts.",
+          "The Great Mosque of Demak stands from the late 1400s. One pillar, the saka tatal, is made of wood pieces.",
+          "Tradition links the mosque to the Wali Songo, the nine saints of Javanese Islam.",
+          "Demak ships trade rice and timber across the Java Sea."
+        ],
+        dispute:"The date of the fall of Majapahit is a point of dispute. Javanese tradition gives 1478. Many scholars place the end near 1527.",
+        history:"Demak is the first Islamic sultanate of Java. Its power passes to Pajang and then to Mataram in the late 1500s." },
+      { id:"m6", title:"Mission 6 · Pepper and Guns", year:"1629", map:"coast",
+        player:"aceh", enemy:"banten", enemyName:"the Portuguese fleet at Malacca",
+        goalType:"survive", goalTime:480, level:1.05,
+        goalText:"Survive for 8 minutes. Portuguese waves attack the port. Keep the Kraton safe.",
+        facts:[
+          "Sultan Iskandar Muda rules Aceh from 1607 to 1636. Aceh reaches its greatest size under him.",
+          "Aceh sells pepper and gold. Its court trades with India, the Ottoman lands and Europe.",
+          "In 1629 Aceh attacks Portuguese Malacca. The attack fails. Aceh loses ships and men.",
+          "Aceh holds a large fleet of galleys. Some galleys carry guns from Ottoman founders."
+        ],
+        dispute:"The size of the 1629 fleet is a point of dispute. Acehnese and Portuguese records give different numbers.",
+        history:"Aceh stays a strong sultanate after 1629. It keeps the pepper trade of north Sumatra for two more centuries." },
+      { id:"m7", title:"Mission 7 · The Pepper Port", year:"c. 1650", map:"river",
+        player:"banten", enemy:"gowa", enemyName:"VOC-backed raiders",
+        goalType:"wealth", goalGold:900, goalAge:3, level:1,
+        goalText:"Stockpile 900 gold from the pepper trade and reach Age III, the Kingdom Age.",
+        facts:[
+          "Banten is a great pepper port in the 1600s. Ships from China, India and Europe load pepper there.",
+          "Sultan Ageng Tirtayasa rules from 1651 to 1683. He builds canals and new rice fields.",
+          "The English East India Company keeps a factory at Banten from 1603 to 1682.",
+          "The VOC seeks a monopoly on pepper. Banten refuses the monopoly for decades."
+        ],
+        dispute:"The pepper volume of Banten is a point of dispute. Dutch records and local records give different totals for some years.",
+        history:"In 1682 the VOC helps Sultan Haji in a civil war. Banten loses its free trade. The port declines under VOC control." },
+      { id:"m8", title:"Mission 8 · War for Makassar", year:"1666 to 1669", map:"hills",
+        player:"gowa", enemy:"aceh", enemyName:"the VOC fort force",
+        goalType:"destroy", level:1.25,
+        goalText:"Destroy the enemy Kraton. The fort stands for the VOC force of Admiral Speelman.",
+        facts:[
+          "The VOC attacks Makassar in 1666. Admiral Cornelis Speelman leads the fleet. Arung Palakka of Bone fights on the VOC side.",
+          "The Treaty of Bungaya is signed in 1667. War starts again soon after.",
+          "Sultan Hasanuddin leads Gowa. Dutch records call him the Fighting Cock of the East.",
+          "Fort Somba Opu falls in June 1669. Gowa loses the war."
+        ],
+        dispute:"The terms debate of Bungaya is a point of dispute. Gowa sources say the VOC breaks the peace. VOC records say Gowa breaks it first.",
+        history:"After 1669 the VOC rules the trade of South Sulawesi. Hasanuddin steps down in 1669 and dies in 1670." }
+    ];
+
+    /* ---------------- codex ---------------- */
+    var CODEX = [
+      { t:"Srivijaya", tag:"fact", body:"A sea empire at Palembang from the late 600s. It taxes ships in the Malacca Strait. It is a centre of Buddhist study. Its power fades in the 1200s.", src:"Source: I Tsing travel record; Kedukan Bukit inscription, 682." },
+      { t:"Mataram Medang", tag:"fact", body:"A kingdom in Central Java, then East Java. Two lines share power: the Buddhist Sailendra and the Hindu Sanjaya. It moves east after 928. A disaster and pressure from Srivijaya play a part.", src:"Source: Mantyasih inscription, 907; Mpu Sindok records." },
+      { t:"Borobudur", tag:"fact", body:"A Buddhist temple in Central Java. Builders raise it in about 780 to 825. It has nine levels and 72 open stupas on the round levels. Volcanic ash covers it for centuries.", src:"Source: Karangtengah inscription, 824; site survey records." },
+      { t:"Prambanan", tag:"fact", body:"A Hindu temple group near Yogyakarta. Builders raise the main Shiva temple in about 850. It holds 240 temples in the full plan. Earthquakes damage it. Rebuild work starts in 1918 and goes on.", src:"Source: Shivagrha inscription, 856." },
+      { t:"Majapahit", tag:"fact", body:"An empire from 1293 to about 1527. Raden Wijaya founds it. Hayam Wuruk rules from 1350 to 1389. Its ports trade from Sumatra to the Maluku Islands.", src:"Source: Nagarakretagama, 1365; Pararaton." },
+      { t:"Gajah Mada", tag:"fact", body:"Gajah Mada is mahapatih of Majapahit from 1334 to 1364. He serves King Hayam Wuruk. Tradition links him to the Palapa oath. He dies in 1364.", src:"Source: Nagarakretagama; Pararaton." },
+      { t:"The Palapa Oath", tag:"disputed", body:"Tradition says Gajah Mada swears not to taste palapa, a spice or fruit, until he unites the archipelago. The exact words of the oath are a point of dispute. The Pararaton is the main source. The text is later than the event.", src:"Source: Pararaton. Treat the wording as tradition, not as a record of the day." },
+      { t:"The Bubat Event", tag:"disputed", body:"In 1357 a Sunda royal party dies at Bubat field near the Majapahit capital. The marriage plan ends in a fight. The cause is a point of dispute. Javanese and Sundanese texts tell the event in different ways.", src:"Source: Kidung Sunda; Pararaton. The two texts do not agree." },
+      { t:"Demak and the Wali Songo", tag:"fact", body:"Demak is the first Islamic sultanate of Java. The Great Mosque of Demak stands from the late 1400s. Tradition links its build to the Wali Songo, the nine saints. Sunan Kalijaga is the saint most linked to the mosque.", src:"Source: Babad Tanah Jawi; mosque site records." },
+      { t:"Aceh and Iskandar Muda", tag:"fact", body:"Iskandar Muda rules Aceh from 1607 to 1636. Aceh controls the pepper ports of north and west Sumatra. The court trades with India and the Ottoman lands. His attack on Malacca fails in 1629.", src:"Source: Hikayat Aceh; Portuguese records." },
+      { t:"Banten, the Pepper Port", tag:"fact", body:"Banten loads pepper for ships of many lands in the 1600s. The English keep a factory there from 1603 to 1682. The VOC gains control after the civil war of 1682.", src:"Source: English factory records; VOC records." },
+      { t:"The Makassar War", tag:"fact", body:"The VOC and Arung Palakka of Bone fight Gowa from 1666 to 1669. The Treaty of Bungaya comes in 1667. Fort Somba Opu falls in 1669. Sultan Hasanuddin leads Gowa.", src:"Source: VOC records of Admiral Speelman; Gowa chronicles." },
+      { t:"The Portuguese Arrive", tag:"fact", body:"Afonso de Albuquerque takes Malacca in 1511. Portuguese ships reach the Maluku Islands soon after. Portugal seeks cloves and nutmeg at the source. Forts rise at Ternate and Ambon.", src:"Source: Tome Pires, Suma Oriental, c. 1515." },
+      { t:"The VOC", tag:"fact", body:"Dutch merchants form the VOC in 1602. The company can wage war and sign treaties. Jan Pieterszoon Coen founds Batavia in 1619 on the ruins of Jayakarta. The VOC falls in 1799.", src:"Source: VOC charter, 1602; company records." },
+      { t:"The English in the Archipelago", tag:"fact", body:"The English East India Company trades at Banten from 1603. The Amboyna event of 1623 ends most English trade in the spice islands. England later holds Bengkulu from 1685 to 1824 and rules Java from 1811 to 1816.", src:"Source: East India Company factory records." },
+      { t:"Scripts of the Archipelago", tag:"fact", body:"Old kingdoms write in scripts from India. Kawi script serves Old Javanese texts. Old Malay uses a Pallava-based script. Later, Jawi and Pegon write Malay and Javanese in Arabic letters. Hanacaraka serves Javanese in later centuries.", src:"Source: Inscription records of Java and Sumatra." },
+      { t:"Trade Goods", tag:"fact", body:"Pepper grows in Sumatra and Java. Cloves grow in the north Maluku Islands. Nutmeg grows in the Banda Islands. Sandalwood comes from Timor. Rice, timber and sea goods move on local ships.", src:"Source: Tome Pires, Suma Oriental; port records." },
+      { t:"Wayang and Gamelan", tag:"fact", body:"Shadow puppet theatre, wayang kulit, tells tales from the Ramayana and the Mahabharata. Gamelan is an orchestra of bronze gongs and xylophones. Courts keep troupes for rites and feasts. Inscriptions name music acts as early as the 900s.", src:"Source: Javanese inscriptions; court records." },
+      { t:"Candi, the Stone Temple", tag:"fact", body:"A candi is a stone temple of the Hindu-Buddhist era. Builders use andesite stone. A candi can serve as a shrine, a gate or a bath. The form copies Mount Meru, the home of the gods.", src:"Source: Site records of Central and East Java." },
+      { t:"The Fall of Majapahit", tag:"disputed", body:"The end date of Majapahit is a point of dispute. Javanese tradition gives 1478, the year of a Demak attack in the chronicles. Many scholars place the end near 1527. The court fades in stages, not on one day.", src:"Source: Babad Tanah Jawi; modern survey studies. The dates do not agree." }
+    ];
+
+    /* ============================================================
+       ENGINE
+       ============================================================ */
+    var TILE = 34, MAPW = 72, MAPH = 72;
+    var canvas = document.getElementById("map");
+    var ctx = canvas.getContext("2d");
+    var mm = document.getElementById("minimap");
+    var mmCtx = mm.getContext("2d");
+
+    var UNIT_TYPES = {
+      villager: { name:"Villager", hp:40, speed:52, atk:3, range:16, sight:120, cost:{rice:50}, time:9, pop:1, glyph:"V" },
+      spearman: { name:"Spearman", hp:75, speed:56, atk:8, range:18, sight:150, cost:{rice:60, wood:20}, time:12, pop:1, glyph:"S", age:2 },
+      archer:   { name:"Archer", hp:50, speed:58, atk:7, range:120, sight:170, cost:{wood:40, gold:45}, time:13, pop:1, glyph:"A", age:2 },
+      swordsman:{ name:"Swordsman", hp:110, speed:54, atk:13, range:18, sight:150, cost:{rice:60, gold:30}, time:15, pop:1, glyph:"K", age:3 },
+      gunner:   { name:"Gunner", hp:60, speed:50, atk:16, range:130, sight:180, cost:{rice:70, gold:50}, time:16, pop:1, glyph:"G", age:3 },
+      elephant: { name:"War Elephant", hp:320, speed:44, atk:22, range:22, sight:150, cost:{rice:180, gold:80}, time:26, pop:3, glyph:"E", age:3 }
+    };
+    var BUILD_TYPES = {
+      kraton:  { name:"Kraton", hp:1400, w:4, h:4, cost:{}, time:0, pop:10, desc:"The court centre. It trains villagers. It stores all goods." },
+      house:   { name:"House", hp:220, w:2, h:2, cost:{wood:30}, time:14, pop:5, desc:"A house for five people." },
+      farm:    { name:"Farm", hp:150, w:2, h:2, cost:{wood:60}, time:10, pop:0, desc:"A rice farm. One villager works one farm. A farm holds 600 rice.", rice:600 },
+      barracks:{ name:"Barracks", hp:600, w:3, h:3, cost:{wood:150}, time:30, pop:0, age:1, desc:"It trains foot soldiers and missile troops." },
+      temple:  { name:"Temple", hp:700, w:3, h:3, cost:{wood:120, stone:80}, time:34, pop:0, age:2, desc:"A candi temple. It trains the war elephant. An age rite needs a Temple from Age II on.", needsForAge:true },
+      tower:   { name:"Tower", hp:650, w:1, h:1, cost:{stone:110}, time:26, pop:0, age:2, atk:11, range:150, desc:"A guard tower. It shoots at foes in range." },
+      market:  { name:"Market", hp:450, w:3, h:2, cost:{wood:130}, time:26, pop:0, age:2, desc:"Trade gives gold. Each Market adds gold each second." },
+      wonder:  { name:"Wonder", hp:1600, w:5, h:5, cost:{wood:300, gold:300, stone:500}, time:110, pop:0, age:3, desc:"A great temple in stone. Build the Wonder to win a Wonder mission." }
+    };
+    var NODE_TYPES = {
+      tree:  { res:"wood", amount:220, name:"Tree" },
+      rice:  { res:"rice", amount:400, name:"Rice field" },
+      gold:  { res:"gold", amount:650, name:"Gold mine" },
+      stone: { res:"stone", amount:450, name:"Stone pile" }
+    };
+
+    var G = null; // game state
+    var uid = 1;
+
+    function newGame(cfg){
+      var pf = factionById(cfg.player), ef = factionById(cfg.enemy);
+      var s = {
+        cfg: cfg, pf: pf, ef: ef, over:false, paused:false, result:null,
+        t: 0, lastTs: 0, raf: 0,
+        res: { rice: 260, wood: 260, gold: 120, stone: 90 },
+        totalGold: 0, age: 1, ageBusy: false, ageTimer: 0,
+        units: [], buildings: [], nodes: [], shots: [],
+        selected: [], selBuilding: null, selNode: null,
+        cam: { x: 0, y: 0 }, keys: {},
+        placeType: null, mouse: { x:0, y:0, wx:0, wy:0, down:false, sx:0, sy:0, moved:false },
+        ai: { timer: 20, wave: cfg.level ? 75 / cfg.level : 75, trainT: 8, gold: 0 },
+        stats: { trained:0, lost:0, killed:0, built:0 },
+        water: [], rates: { rice:0, wood:0, gold:0, stone:0 }, rateT: 0, lastRes: null,
+        marketT: 0, mmT: 0, alerted: {},
+        view: { rot: 0, zoom: 1 },
+        guided: !!cfg.guided, guideStep: 0, guideDone: false, guideHidden: false,
+        startRice: 260, hintT: 0,
+        surviveLeft: cfg.goalTime || 0
+      };
+      genMap(s, cfg.map);
+      // player base: south-west
+      placeBase(s, "player", pf, 9, MAPH - 12);
+      placeBase(s, "enemy", ef, MAPW - 13, 8);
+      s.cam.x = clamp((9 * TILE) - canvas.clientWidth / 2, 0, MAPW * TILE - canvas.clientWidth);
+      s.cam.y = clamp(((MAPH - 12) * TILE) - canvas.clientHeight / 2, 0, MAPH * TILE - canvas.clientHeight);
+      s.lastRes = { rice: s.res.rice, wood: s.res.wood, gold: s.res.gold, stone: s.res.stone };
+      return s;
+    }
+
+    function genMap(s, kind){
+      var i, x, y;
+      s.water = [];
+      function addWater(cx, cy, r){
+        for (y = 0; y < MAPH; y++) for (x = 0; x < MAPW; x++){
+          var dx = x - cx, dy = y - cy;
+          if (dx*dx + dy*dy <= r*r && Math.random() > 0.25) s.water.push(x + "," + y);
+        }
+      }
+      if (kind === "river"){ for (y = 0; y < MAPH; y++){ if (y === 30 || y === 41) continue; s.water.push(Math.floor(MAPW/2) + "," + y); s.water.push((Math.floor(MAPW/2)+1) + "," + y); } addWater(14, 14, 3); }
+      if (kind === "coast"){ addWater(50, 46, 8); addWater(54, 42, 5); }
+      if (kind === "hills"){ addWater(18, 20, 4); addWater(56, 54, 4); }
+      function isWater(x, y){ return s.water.indexOf(x + "," + y) >= 0; }
+      function nearBase(x, y){ return (x < 20 && y > MAPH - 22) || (x > MAPW - 22 && y < 20); }
+      function scatter(type, count, minX, maxX, minY, maxY){
+        var placed = 0, guard = 0;
+        while (placed < count && guard++ < count * 60){
+          x = Math.floor(minX + Math.random() * (maxX - minX));
+          y = Math.floor(minY + Math.random() * (maxY - minY));
+          if (isWater(x, y) || nearBase(x, y)) continue;
+          if (s.nodes.some(function(n){ return Math.abs(n.tx - x) < 2 && Math.abs(n.ty - y) < 2; })) continue;
+          s.nodes.push({ id: uid++, type: type, tx: x, ty: y, x: x * TILE + TILE/2, y: y * TILE + TILE/2, amount: NODE_TYPES[type].amount, res: NODE_TYPES[type].res });
+          placed++;
+        }
+      }
+      // forests in clumps
+      for (i = 0; i < 26; i++){
+        var cx = 4 + Math.random() * (MAPW - 8), cy = 4 + Math.random() * (MAPH - 8);
+        scatter("tree", 6, cx - 3, cx + 3, cy - 3, cy + 3);
+      }
+      scatter("rice", 26, 2, MAPW - 2, 2, MAPH - 2);
+      scatter("gold", kind === "river" ? 16 : 11, 2, MAPW - 2, 2, MAPH - 2);
+      if (kind === "river") scatter("gold", 6, MAPW/2 - 5, MAPW/2 + 5, MAPH/2 - 6, MAPH/2 + 6);
+      scatter("stone", kind === "hills" ? 20 : 12, 2, MAPW - 2, 2, MAPH - 2);
+      // home resources near each base
+      function homeNodes(bx, by){
+        var spots = [[-4,-2],[-5,1],[-3,3],[3,-4],[5,-2],[2,4],[-6,-4],[6,3]];
+        var kinds = ["tree","tree","rice","gold","stone","rice","tree","gold"];
+        spots.forEach(function(sp, i){
+          var x = bx + sp[0], y = by + sp[1];
+          if (x < 1 || y < 1 || x >= MAPW - 1 || y >= MAPH - 1 || isWater(x, y)) return;
+          s.nodes.push({ id: uid++, type: kinds[i], tx: x, ty: y, x: x * TILE + TILE/2, y: y * TILE + TILE/2, amount: NODE_TYPES[kinds[i]].amount, res: NODE_TYPES[kinds[i]].res });
+        });
+      }
+      homeNodes(9, MAPH - 12); homeNodes(MAPW - 13, 8);
+    }
+
+    function placeBase(s, owner, fac, tx, ty){
+      var b = addBuilding(s, owner, "kraton", tx, ty, true);
+      addBuilding(s, owner, "house", tx + 5, ty + 1, true);
+      addBuilding(s, owner, "house", tx - 3, ty + 4, true);
+      if (owner === "enemy") addBuilding(s, owner, "barracks", tx + 1, ty + 6, true);
+      for (var i = 0; i < 5; i++){
+        addUnit(s, owner, "villager", b.x + 60 + (i % 3) * 26, b.y + b.h * TILE + 18 + Math.floor(i / 3) * 24);
+      }
+      if (owner === "enemy"){
+        addUnit(s, owner, "spearman", b.x - 30, b.y + 90);
+        addUnit(s, owner, "spearman", b.x + 90, b.y - 20);
+      }
+      return b;
+    }
+
+    function addBuilding(s, owner, type, tx, ty, instant){
+      var bt = BUILD_TYPES[type];
+      var b = { id: uid++, owner: owner, type: type, tx: tx, ty: ty,
+        x: tx * TILE, y: ty * TILE, w: bt.w, h: bt.h,
+        hp: instant ? bt.hp : 1, maxHp: bt.hp, built: !!instant,
+        buildT: 0, buildNeed: bt.time, queue: [], qt: 0, rice: bt.rice || 0, dead: false, cool: 0 };
+      s.buildings.push(b);
+      return b;
+    }
+    function addUnit(s, owner, type, x, y){
+      var ut = UNIT_TYPES[type];
+      var u = { id: uid++, owner: owner, type: type, x: x, y: y, hp: ut.hp, maxHp: ut.hp,
+        state: "idle", tx: x, ty: y, target: null, node: null, buildTarget: null,
+        cool: 0, gatherT: 0, farmB: null, dead: false, stuck: 0 };
+      s.units.push(u);
+      return u;
+    }
+
+    /* ---------------- helpers ---------------- */
+    function clamp(v, a, b){ return v < a ? a : (v > b ? b : v); }
+    function dist(ax, ay, bx, by){ var dx = ax - bx, dy = ay - by; return Math.sqrt(dx*dx + dy*dy); }
+    function fmtTime(t){ var m = Math.floor(t / 60), ss = Math.floor(t % 60); return m + ":" + (ss < 10 ? "0" : "") + ss; }
+    function costText(c){ var p = []; for (var k in c) p.push(c[k] + " " + k); return p.join(", ") || "Free"; }
+    function canAfford(res, c){ for (var k in c) if (res[k] < c[k]) return false; return true; }
+    function pay(res, c){ for (var k in c) res[k] -= c[k]; }
+    function popUsed(s, owner){ var p = 0; s.units.forEach(function(u){ if (u.owner === owner && !u.dead) p += UNIT_TYPES[u.type].pop; });
+      s.buildings.forEach(function(b){ if (b.owner === owner && !b.dead) b.queue.forEach(function(q){ p += UNIT_TYPES[q].pop; }); }); return p; }
+    function popCap(s, owner){ var p = 0; s.buildings.forEach(function(b){ if (b.owner === owner && !b.dead && b.built) p += BUILD_TYPES[b.type].pop || 0; }); return Math.min(p, 120); }
+    function playerKraton(s){ return s.buildings.find(function(b){ return b.owner === "player" && b.type === "kraton" && !b.dead; }); }
+    function enemyKraton(s){ return s.buildings.find(function(b){ return b.owner === "enemy" && b.type === "kraton" && !b.dead; }); }
+    function nearestDrop(s, u){
+      var best = null, bd = 1e9;
+      s.buildings.forEach(function(b){ if (b.owner === u.owner && !b.dead && b.built && (b.type === "kraton")){ var d = dist(u.x, u.y, b.x + b.w*TILE/2, b.y + b.h*TILE/2); if (d < bd){ bd = d; best = b; } } });
+      return best;
+    }
+
+    /* ---------------- orders ---------------- */
+    function orderMove(u, x, y){ u.state = "move"; u.tx = x; u.ty = y; u.target = null; u.node = null; u.buildTarget = null; u.farmB = null; }
+    function orderAttack(u, tgt){ u.state = "attackmove"; u.target = tgt; u.node = null; u.buildTarget = null; }
+    function orderGather(u, node){ u.state = "tonode"; u.node = node; u.target = null; u.buildTarget = null; u.farmB = null; }
+    function orderFarm(u, b){ u.state = "tofarm"; u.farmB = b; u.node = null; u.target = null; }
+    function orderBuild(u, b){ u.state = "tobuild"; u.buildTarget = b; u.node = null; u.target = null; }
+
+    function issueSmartOrder(units, wx, wy){
+      var s = G; if (!s) return;
+      // enemy at point?
+      var foe = pickEntity(wx, wy, "enemy");
+      var node = pickNode(wx, wy);
+      var farm = pickFarm(wx, wy);
+      var site = pickSite(wx, wy);
+      units.forEach(function(u){
+        if (u.type === "villager"){
+          if (site) orderBuild(u, site);
+          else if (farm) orderFarm(u, farm);
+          else if (node) orderGather(u, node);
+          else if (foe) orderMove(u, wx, wy);
+          else orderMove(u, wx, wy);
+        } else {
+          if (foe) orderAttack(u, foe);
+          else orderMove(u, wx, wy);
+        }
+      });
+      blip(660, 0.05, "square");
+    }
+    function pickEntity(wx, wy, owner){
+      var i, e = null, bd = 30;
+      G.units.forEach(function(u){ if (u.owner === owner && !u.dead){ var d = dist(wx, wy, u.x, u.y); if (d < bd){ bd = d; e = u; } } });
+      if (e) return e;
+      G.buildings.forEach(function(b){ if (b.owner === owner && !b.dead && wx >= b.x - 6 && wx <= b.x + b.w*TILE + 6 && wy >= b.y - 6 && wy <= b.y + b.h*TILE + 6) e = b; });
+      return e;
+    }
+    function pickNode(wx, wy){
+      var best = null, bd = 30;
+      G.nodes.forEach(function(n){ if (n.amount > 0){ var d = dist(wx, wy, n.x, n.y); if (d < bd){ bd = d; best = n; } } });
+      return best;
+    }
+    function pickFarm(wx, wy){
+      var f = null;
+      G.buildings.forEach(function(b){ if (b.owner === "player" && b.type === "farm" && b.built && !b.dead && b.rice > 0 && wx >= b.x && wx <= b.x + b.w*TILE && wy >= b.y && wy <= b.y + b.h*TILE) f = b; });
+      return f;
+    }
+    function pickSite(wx, wy){
+      var f = null;
+      G.buildings.forEach(function(b){ if (b.owner === "player" && !b.built && !b.dead && wx >= b.x - 8 && wx <= b.x + b.w*TILE + 8 && wy >= b.y - 8 && wy <= b.y + b.h*TILE + 8) f = b; });
+      return f;
+    }
+
+    /* ---------------- update ---------------- */
+    function step(dt){
+      var s = G; if (!s || s.paused || s.over) return;
+      s.t += dt;
+      if (s.cfg.goalType === "survive") s.surviveLeft = Math.max(0, s.cfg.goalTime - s.t);
+
+      // age research
+      if (s.ageBusy){
+        s.ageTimer -= dt;
+        if (s.ageTimer <= 0){ s.ageBusy = false; s.age++; alertMsg("Age " + ["I","II","III","IV"][s.age-1] + " begins. New buildings and units open.", "good"); blip(520, .12, "sine"); refreshHUD(); }
+      }
+      // market income
+      s.marketT += dt;
+      if (s.marketT >= 1){
+        s.marketT -= 1;
+        var markets = s.buildings.filter(function(b){ return b.owner === "player" && b.type === "market" && b.built && !b.dead; }).length;
+        if (markets){ var gain = markets * 0.35 * (s.pf.bonus.marketRate || 1); s.res.gold += gain; s.totalGold += gain; }
+      }
+      // rates
+      s.rateT += dt;
+      if (s.rateT >= 2){
+        ["rice","wood","gold","stone"].forEach(function(k){ s.rates[k] = Math.max(0, (s.res[k] - s.lastRes[k]) / s.rateT); });
+        s.lastRes = { rice: s.res.rice, wood: s.res.wood, gold: s.res.gold, stone: s.res.stone };
+        s.rateT = 0;
+        $("age-name").textContent = "Age " + ["I","II","III","IV"][s.age - 1] + " · " + AGES[s.age - 1].name;
+      }
+
+      s.units.forEach(function(u){ if (!u.dead) stepUnit(u, dt); });
+      s.buildings.forEach(function(b){ if (!b.dead) stepBuilding(b, dt); });
+      stepAI(dt);
+      // projectiles
+      s.shots = s.shots.filter(function(sh){ sh.t -= dt; return sh.t > 0; });
+      // cleanup
+      s.units = s.units.filter(function(u){ return !u.dead; });
+      s.buildings = s.buildings.filter(function(b){ return !b.dead; });
+      s.nodes = s.nodes.filter(function(n){ return n.amount > 0; });
+      s.selected = s.selected.filter(function(u){ return !u.dead; });
+      if (s.selBuilding && s.selBuilding.dead) { s.selBuilding = null; refreshSelectionCard(); }
+      checkEnd();
+      refreshTopBar();
+      updateAgeBtn();
+      s.mmT += dt; if (s.mmT > 0.25){ s.mmT = 0; drawMinimap(); }
+      var oc = document.getElementById("obj-progress"); if (oc) oc.textContent = objectiveProgress();
+      s.hintT += dt; if (s.hintT > 0.6){ s.hintT = 0; updateHint(); updateGuide(); }
+    }
+
+    function stepUnit(u, dt){
+      var s = G, ut = UNIT_TYPES[u.type];
+      u.cool = Math.max(0, u.cool - dt);
+      var fac = u.owner === "player" ? s.pf : s.ef;
+
+      function moveToward(x, y, stopD){
+        var d = dist(u.x, u.y, x, y);
+        if (d <= stopD) return true;
+        var sp = ut.speed * dt, dx = (x - u.x) / d, dy = (y - u.y) / d;
+        var nx = u.x + dx * Math.min(sp, d), ny = u.y + dy * Math.min(sp, d);
+        if (!blocked(nx, ny, u)){ u.x = nx; u.y = ny; }
+        else if (!blocked(nx, u.y, u)){ u.x = nx; }
+        else if (!blocked(u.x, ny, u)){ u.y = ny; }
+        else { u.stuck += dt; if (u.stuck > 1.2){ u.x += (Math.random() - .5) * 14; u.y += (Math.random() - .5) * 14; u.stuck = 0; } }
+        return dist(u.x, u.y, x, y) <= stopD + 2;
+      }
+      // separation
+      G.units.forEach(function(o){ if (o !== u && !o.dead){ var d = dist(u.x, u.y, o.x, o.y); if (d > 0 && d < 15){ u.x += (u.x - o.x) / d * 12 * dt; u.y += (u.y - o.y) / d * 12 * dt; } } });
+
+      // auto-acquire for soldiers
+      if (u.type !== "villager" && (u.state === "idle" || u.state === "move" || u.state === "attackmove")){
+        if (!u.target || u.target.dead){
+          u.target = findFoe(u, ut.sight);
+          if (u.target && u.state === "idle") u.state = "attackmove";
+        }
+      }
+
+      if (u.state === "move"){
+        if (moveToward(u.tx, u.ty, 4)) u.state = "idle";
+      } else if (u.state === "attackmove"){
+        var t = u.target;
+        if (!t || t.dead){ u.target = findFoe(u, ut.sight + 60); if (!u.target){ if (u.state === "attackmove" && u.tx !== undefined && dist(u.x, u.y, u.tx, u.ty) > 6 && u.owner === "enemy") { if (moveToward(u.tx, u.ty, 6)) u.state = "idle"; } else u.state = "idle"; } }
+        else {
+          var tc = targetCenter(t), rng = ut.range + (t.w ? t.w * TILE / 2 : 10);
+          if (dist(u.x, u.y, tc.x, tc.y) > rng) moveToward(tc.x, tc.y, rng - 2);
+          else if (u.cool <= 0){ hitTarget(u, t); }
+        }
+      } else if (u.state === "tonode"){
+        if (!u.node || u.node.amount <= 0){ u.state = "idle"; }
+        else if (moveToward(u.node.x, u.node.y, 20)) u.state = "gather";
+      } else if (u.state === "gather"){
+        if (!u.node || u.node.amount <= 0){ u.state = "idle"; }
+        else if (dist(u.x, u.y, u.node.x, u.node.y) > 26){ u.state = "tonode"; }
+        else {
+          u.gatherT += dt;
+          var rate = 1.05;
+          if (u.node.res === "gold" && u.owner === "player") rate *= (s.pf.bonus.goldRate || 1);
+          if (u.node.res === "rice" && u.owner === "player") rate *= (s.pf.bonus.riceRate || 1);
+          var take = Math.min(rate * dt, u.node.amount);
+          u.node.amount -= take;
+          if (u.owner === "player"){ s.res[u.node.res] += take; if (u.node.res === "gold") s.totalGold += take; }
+        }
+      } else if (u.state === "tofarm"){
+        if (!u.farmB || u.farmB.dead || u.farmB.rice <= 0){ u.state = "idle"; }
+        else if (moveToward(u.farmB.x + TILE, u.farmB.y + TILE, 22)) u.state = "farmwork";
+      } else if (u.state === "farmwork"){
+        var fb = u.farmB;
+        if (!fb || fb.dead || fb.rice <= 0){ u.state = "idle"; }
+        else {
+          var frate = 1.1 * (u.owner === "player" ? (s.pf.bonus.riceRate || 1) : 1);
+          var ftake = Math.min(frate * dt, fb.rice); fb.rice -= ftake;
+          if (u.owner === "player") s.res.rice += ftake;
+          if (fb.rice <= 0) u.state = "idle";
+        }
+      } else if (u.state === "tobuild"){
+        var bb = u.buildTarget;
+        if (!bb || bb.dead){ u.state = "idle"; }
+        else if (moveToward(bb.x + bb.w * TILE / 2, bb.y + bb.h * TILE / 2, bb.w * TILE / 2 + 8)){
+          bb.hp = Math.min(bb.maxHp, bb.hp + (bb.maxHp / bb.buildNeed) * dt * 1.4);
+          if (bb.hp >= bb.maxHp){ bb.built = true; u.state = "idle"; if (bb.owner === "player"){ s.stats.built++; alertMsg(bb.type === "wonder" ? "The Wonder stands complete." : BUILD_TYPES[bb.type].name + " is complete.", "info"); refreshHUD(); } }
+        }
+      } else if (u.state === "idle"){
+        if (u.type !== "villager"){
+          var f2 = findFoe(u, ut.sight);
+          if (f2){ u.target = f2; u.state = "attackmove"; }
+        }
+      }
+      // enemy soldiers press toward player kraton when ordered
+      if (u.owner === "enemy" && u.type !== "villager" && u.state === "idle"){
+        var pk = playerKraton(s); if (pk){ u.tx = pk.x + pk.w*TILE/2; u.ty = pk.y + pk.h*TILE/2; u.state = "attackmove"; u.target = null; }
+      }
+    }
+
+    function blocked(x, y, self){
+      var s = G;
+      var tx = Math.floor(x / TILE), ty = Math.floor(y / TILE);
+      if (tx < 0 || ty < 0 || tx >= MAPW || ty >= MAPH) return true;
+      if (s.water.indexOf(tx + "," + ty) >= 0) return true;
+      for (var i = 0; i < s.buildings.length; i++){
+        var b = s.buildings[i]; if (b.dead) continue;
+        if (x > b.x + 3 && x < b.x + b.w * TILE - 3 && y > b.y + 3 && y < b.y + b.h * TILE - 3) return true;
+      }
+      return false;
+    }
+    function targetCenter(t){ if (t.w) return { x: t.x + t.w * TILE / 2, y: t.y + t.h * TILE / 2 }; return { x: t.x, y: t.y }; }
+    function findFoe(u, sight){
+      var s = G, best = null, bd = sight;
+      var foeOwner = u.owner === "player" ? "enemy" : "player";
+      s.units.forEach(function(o){ if (o.owner === foeOwner && !o.dead){ var d = dist(u.x, u.y, o.x, o.y); if (d < bd){ bd = d; best = o; } } });
+      if (best) return best;
+      s.buildings.forEach(function(b){ if (b.owner === foeOwner && !b.dead){ var c = targetCenter(b); var d = dist(u.x, u.y, c.x, c.y) - b.w * TILE / 2; if (d < bd){ bd = d; best = b; } } });
+      return best;
+    }
+    function hitTarget(u, t){
+      var s = G, ut = UNIT_TYPES[u.type];
+      var atk = ut.atk;
+      if (u.owner === "player"){
+        if ((u.type === "spearman" || u.type === "swordsman")) atk *= (s.pf.bonus.infantryAtk || 1);
+        if (u.type === "archer" || u.type === "gunner") atk *= (s.pf.bonus.rangedAtk || 1);
+      } else { atk *= (0.85 + (s.cfg.level || 1) * 0.15); }
+      u.cool = ut.range > 40 ? 1.15 : 0.9;
+      if (ut.range > 40){ var c = targetCenter(t); s.shots.push({ x1: u.x, y1: u.y - 8, x2: c.x, y2: c.y - 8, t: 0.16, gun: u.type === "gunner" }); blip(u.type === "gunner" ? 190 : 880, 0.04, "square"); }
+      damage(t, atk, u.owner);
+    }
+    function damage(t, dmg, byOwner){
+      var s = G; if (!t || t.dead) return;
+      t.hp -= dmg;
+      // defenders react
+      if (t.owner && t.type && UNIT_TYPES[t.type] === undefined){ /* building */ }
+      if (t.hp <= 0){
+        t.dead = true;
+        if (t.w){ // building
+          if (t.owner === "player"){ s.stats.lost++; alertMsg(BUILD_TYPES[t.type].name + " is destroyed.", "bad"); }
+          else { s.stats.killed++; alertMsg("Enemy " + BUILD_TYPES[t.type].name + " is destroyed.", "good"); }
+          blip(120, 0.25, "sawtooth");
+        } else {
+          if (t.owner === "player"){ s.stats.lost++; if (t.type === "villager") alertMsg("A villager falls.", "bad"); }
+          else s.stats.killed++;
+        }
+      }
+    }
+
+    function stepBuilding(b, dt){
+      var s = G, bt = BUILD_TYPES[b.type];
+      if (!b.built) return;
+      // tower fire
+      if (bt.atk){
+        b.cool = Math.max(0, b.cool - dt);
+        if (b.cool <= 0){
+          var foe = null, bd = bt.range;
+          var fo = b.owner === "player" ? "enemy" : "player";
+          s.units.forEach(function(u){ if (u.owner === fo && !u.dead){ var d = dist(b.x + b.w*TILE/2, b.y + b.h*TILE/2, u.x, u.y); if (d < bd){ bd = d; foe = u; } } });
+          if (foe){ b.cool = 1.1; s.shots.push({ x1: b.x + b.w*TILE/2, y1: b.y, x2: foe.x, y2: foe.y - 6, t: 0.14, gun: false }); damage(foe, bt.atk, b.owner); }
+        }
+      }
+      // production
+      if (b.queue.length){
+        b.qt += dt;
+        var need = UNIT_TYPES[b.queue[0]].time;
+        if (b.qt >= need){
+          b.qt = 0; var type = b.queue.shift();
+          var u = addUnit(s, b.owner, type, b.x + b.w * TILE / 2 + (Math.random() - .5) * 30, b.y + b.h * TILE + 16);
+          if (b.owner === "player"){ s.stats.trained++; if (type === "villager") sendVillagerToWork(u); refreshHUD(); }
+          else { var pk = playerKraton(s); }
+        }
+      }
+    }
+    function sendVillagerToWork(u){
+      // send a fresh villager to the nearest free resource
+      var s = G, best = null, bd = 1e9;
+      s.nodes.forEach(function(n){ var d = dist(u.x, u.y, n.x, n.y); if (d < bd){ bd = d; best = n; } });
+      if (best) orderGather(u, best);
+    }
+
+    /* ---------------- AI ---------------- */
+    function stepAI(dt){
+      var s = G, ai = s.ai, ek = enemyKraton(s);
+      if (!ek) return;
+      ai.trainT -= dt; ai.wave -= dt;
+      var eUnits = s.units.filter(function(u){ return u.owner === "enemy"; });
+      var eArmy = eUnits.filter(function(u){ return u.type !== "villager"; });
+      var eBarracks = s.buildings.filter(function(b){ return b.owner === "enemy" && b.type === "barracks" && !b.dead && b.built; });
+      if (ai.trainT <= 0){
+        ai.trainT = 6;
+        // keep villagers
+        var ev = eUnits.filter(function(u){ return u.type === "villager"; }).length;
+        if (ev < 6){ var k = s.buildings.find(function(b){ return b.owner === "enemy" && b.type === "kraton"; }); if (k && k.queue.length < 2) k.queue.push("villager"); }
+        else if (eBarracks.length && eArmy.length < 16){
+          var pick = s.t > 300 ? (Math.random() < .3 ? "swordsman" : (Math.random() < .5 ? "archer" : "spearman")) : (Math.random() < .6 ? "spearman" : "archer");
+          if (s.t > 480 && Math.random() < .18) pick = "elephant";
+          eBarracks[0].queue.push(pick);
+        }
+        // build a tower mid game
+        if (s.t > 240 && !s.buildings.some(function(b){ return b.owner === "enemy" && b.type === "tower"; })){
+          addBuilding(s, "enemy", "tower", ek.tx - 3, ek.ty + 5, true);
+        }
+      }
+      if (ai.wave <= 0){
+        ai.wave = Math.max(45, 105 - s.t / 30) / (s.cfg.level || 1);
+        var pk = playerKraton(s); if (!pk) return;
+        var wave = eArmy.filter(function(u){ return u.state === "idle" || u.state === "attackmove" && !u.target; });
+        var send = wave.slice(0, Math.max(3, Math.floor(eArmy.length * 0.7)));
+        if (send.length >= 2){
+          send.forEach(function(u){ u.tx = pk.x + pk.w * TILE / 2; u.ty = pk.y + pk.h * TILE / 2; u.state = "attackmove"; u.target = null; });
+          alertMsg("Enemy troops move on your court.", "bad"); blip(220, .15, "sawtooth");
+        }
+      }
+    }
+
+    function checkEnd(){
+      var s = G; if (s.over) return;
+      var pk = playerKraton(s), ek = enemyKraton(s);
+      if (!pk){ endGame(false, "The enemy destroys your Kraton. The court falls."); return; }
+      var c = s.cfg;
+      if (c.goalType === "destroy" && !ek){ endGame(true, "The enemy Kraton falls. The field is yours."); return; }
+      if (c.goalType === "wonder"){
+        var w = s.buildings.find(function(b){ return b.owner === "player" && b.type === "wonder" && b.built && !b.dead; });
+        if (w){ endGame(true, "The Wonder stands complete. The court wins fame for a thousand years."); return; }
+      }
+      if (c.goalType === "wealth"){
+        if (s.totalGold >= c.goalGold && s.age >= c.goalAge){ endGame(true, "Trade fills the treasury. The port is rich and the court is strong."); return; }
+      }
+      if (c.goalType === "survive"){
+        if (s.t >= c.goalTime){ endGame(true, "The court holds. The waves break and go home."); return; }
+      }
+    }
+    function objectiveProgress(){
+      var s = G, c = s.cfg;
+      if (c.goalType === "destroy") return enemyKraton(s) ? "Enemy Kraton stands. HP " + Math.max(0, Math.ceil(enemyKraton(s).hp)) + " of " + enemyKraton(s).maxHp + "." : "Enemy Kraton is down.";
+      if (c.goalType === "wonder"){
+        var w = s.buildings.find(function(b){ return b.owner === "player" && b.type === "wonder"; });
+        if (!w) return "No Wonder site yet. Reach Age III. Select a villager. Build the Wonder.";
+        if (!w.built) return "The Wonder rises. Build level " + Math.floor(w.hp / w.maxHp * 100) + " percent.";
+        return "The Wonder stands.";
+      }
+      if (c.goalType === "wealth") return "Gold from trade: " + Math.floor(s.totalGold) + " of " + c.goalGold + ". Age: " + ["I","II","III","IV"][s.age-1] + " of " + ["I","II","III","IV"][c.goalAge-1] + ".";
+      if (c.goalType === "survive") return "Hold for " + fmtTime(s.surviveLeft) + " more.";
+      return "";
+    }
+
+    /* ============================================================
+       RENDER
+       ============================================================ */
+    function resizeCanvas(){
+      var r = canvas.parentElement.getBoundingClientRect();
+      var dpr = Math.min(2, window.devicePixelRatio || 1);
+      canvas.width = Math.floor(r.width * dpr); canvas.height = Math.floor(r.height * dpr);
+      ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+    }
+    window.addEventListener("resize", resizeCanvas);
+
+    /* ============================================================
+       3D ENGINE (Three.js). The logic world stays in pixels.
+       One tile is 2 world units in the 3D scene.
+       ============================================================ */
+    var T3 = { ok:false, tried:false, renderer:null, scene:null, camera:null, sun:null,
+      world:null, waterMesh:null, ghost:null, ghostType:null, builtFor:null,
+      bMeshes:{}, uMeshes:{}, nMeshes:{}, shotGroup:null, raycaster:null, groundPlane:null, time:0 };
+    var S3 = 2 / TILE; // px to 3D units
+    function w2x(wx){ return (wx - MAPW * TILE / 2) * S3; }
+    function w2z(wy){ return (wy - MAPH * TILE / 2) * S3; }
+    function x2w(x){ return x / S3 + MAPW * TILE / 2; }
+    function z2w(z){ return z / S3 + MAPH * TILE / 2; }
+    function noise2(x, y){ return Math.sin(x * 0.55 + y * 0.31) * 0.5 + Math.sin(x * 0.21 - y * 0.43) * 0.35 + Math.sin((x + y) * 0.12) * 0.4; }
+    function tileHeight(s, tx, ty){
+      tx = clamp(tx, 0, MAPW - 1); ty = clamp(ty, 0, MAPH - 1);
+      if (s.water.indexOf(tx + "," + ty) >= 0) return -0.55;
+      var dP = Math.sqrt((tx - 11) * (tx - 11) + (ty - (MAPH - 12)) * (ty - (MAPH - 12)));
+      var dE = Math.sqrt((tx - (MAPW - 11)) * (tx - (MAPW - 11)) + (ty - 10) * (ty - 10));
+      var flat = clamp(Math.min(dP, dE) / 9, 0, 1);
+      var h = noise2(tx, ty);
+      return Math.max(0, h) * 1.45 * flat + h * 0.14 * flat;
+    }
+    function groundH(s, wx, wy){
+      var tx = Math.floor(wx / TILE), ty = Math.floor(wy / TILE);
+      var a = tileHeight(s, tx, ty), b = tileHeight(s, tx + 1, ty), c = tileHeight(s, tx, ty + 1), d = tileHeight(s, tx + 1, ty + 1);
+      return (a + b + c + d) / 4;
+    }
+    var MAT3 = {};
+    function mat3(color, rough){
+      var k = color + "/" + (rough || 0.9);
+      if (!MAT3[k]) MAT3[k] = new THREE.MeshStandardMaterial({ color: color, roughness: rough || 0.9, metalness: 0.02 });
+      return MAT3[k];
+    }
+    function facMat3(fac){ var k = "fac" + fac.id; if (!MAT3[k]) MAT3[k] = new THREE.MeshStandardMaterial({ color: new THREE.Color(fac.color), roughness: 0.75 }); return MAT3[k]; }
+    function facDarkMat3(fac){ var k = "facd" + fac.id; if (!MAT3[k]) MAT3[k] = new THREE.MeshStandardMaterial({ color: new THREE.Color(fac.dark), roughness: 0.8 }); return MAT3[k]; }
+    function box3(w, h, d, material, x, y, z){
+      var m = new THREE.Mesh(new THREE.BoxGeometry(w, h, d), material);
+      m.position.set(x || 0, y || 0, z || 0); m.castShadow = true; m.receiveShadow = true; return m;
+    }
+    function ring3(radius, color){
+      var m = new THREE.Mesh(new THREE.RingGeometry(radius * 0.82, radius, 28),
+        new THREE.MeshBasicMaterial({ color: color || 0xe8c95c, transparent: true, opacity: 0.95, side: THREE.DoubleSide }));
+      m.rotation.x = -Math.PI / 2; m.position.y = 0.07; m.visible = false; return m;
+    }
+    function banner3(fac, h){
+      var g = new THREE.Group();
+      var pole = new THREE.Mesh(new THREE.CylinderGeometry(0.05, 0.05, h, 6), mat3(0x5d4028));
+      pole.position.y = h / 2; pole.castShadow = true; g.add(pole);
+      var cloth = new THREE.Mesh(new THREE.PlaneGeometry(0.85, 1.05), new THREE.MeshStandardMaterial({ color: new THREE.Color(fac.color), roughness: 0.85, side: THREE.DoubleSide }));
+      cloth.position.set(0.46, h - 0.6, 0); cloth.castShadow = true; g.add(cloth);
+      g.userData.cloth = cloth; return g;
+    }
+
+    function init3D(){
+      if (T3.tried) return; T3.tried = true;
+      if (!window.THREE) return;
+      try {
+        T3.renderer = new THREE.WebGLRenderer({ antialias: true });
+        T3.renderer.setPixelRatio(Math.min(1, window.devicePixelRatio || 1));
+        T3.renderer.shadowMap.enabled = true;
+        T3.renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+        T3.renderer.domElement.style.cssText = "position:absolute;inset:0;width:100%;height:100%;z-index:1;";
+        document.getElementById("stage").appendChild(T3.renderer.domElement);
+        T3.scene = new THREE.Scene();
+        T3.scene.background = new THREE.Color(0xa9c9de);
+        T3.scene.fog = new THREE.Fog(0xc4d8cf, 200, 460);
+        T3.camera = new THREE.PerspectiveCamera(46, 1.6, 0.1, 1200);
+        var hemi = new THREE.HemisphereLight(0xfff1d6, 0x4f6a3a, 0.8); T3.scene.add(hemi);
+        T3.sun = new THREE.DirectionalLight(0xffdfae, 1.1);
+        T3.sun.castShadow = true;
+        T3.sun.shadow.mapSize.set(2048, 2048);
+        T3.sun.shadow.camera.left = -78; T3.sun.shadow.camera.right = 78;
+        T3.sun.shadow.camera.top = 78; T3.sun.shadow.camera.bottom = -78;
+        T3.sun.shadow.camera.far = 320; T3.sun.shadow.bias = -0.0006;
+        T3.scene.add(T3.sun); T3.scene.add(T3.sun.target);
+        T3.shotGroup = new THREE.Group(); T3.scene.add(T3.shotGroup);
+        T3.raycaster = new THREE.Raycaster();
+        T3.groundPlane = new THREE.Plane(new THREE.Vector3(0, 1, 0), 0);
+        T3.ok = true;
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+      } catch (err) { T3.ok = false; }
+    }
+
+    function groundTexture(s){
+      var cv = document.createElement("canvas"); cv.width = 512; cv.height = 512;
+      var c2 = cv.getContext("2d");
+      c2.fillStyle = "#eef0e4"; c2.fillRect(0, 0, 512, 512);
+      for (var i = 0; i < 5200; i++){
+        var g = 150 + Math.floor(Math.random() * 80);
+        c2.fillStyle = "rgba(" + (g - 60) + "," + g + "," + (g - 90) + ",0.20)";
+        c2.fillRect(Math.random() * 512, Math.random() * 512, 3, 3);
+      }
+      for (var j = 0; j < 500; j++){ c2.fillStyle = "rgba(190,170,110,0.16)"; c2.fillRect(Math.random() * 512, Math.random() * 512, 2, 2); }
+      var tex = new THREE.CanvasTexture(cv);
+      tex.wrapS = tex.wrapT = THREE.RepeatWrapping; tex.repeat.set(10, 10);
+      return tex;
+    }
+    function buildWorld(s){
+      if (T3.world){ T3.scene.remove(T3.world); T3.world.traverse(function(o){ if (o.geometry) o.geometry.dispose(); }); }
+      T3.world = new THREE.Group(); T3.scene.add(T3.world);
+      T3.bMeshes = {}; T3.uMeshes = {}; T3.nMeshes = {};
+      // terrain with real height
+      var geo = new THREE.PlaneGeometry(MAPW * 2, MAPH * 2, MAPW, MAPH);
+      geo.rotateX(-Math.PI / 2);
+      var pos = geo.attributes.position, colors = [];
+      var col = new THREE.Color();
+      for (var i = 0; i < pos.count; i++){
+        var vx = pos.getX(i), vz = pos.getZ(i);
+        var wx = x2w(vx), wy = z2w(vz);
+        var tx = clamp(Math.floor(wx / TILE), 0, MAPW - 1), ty = clamp(Math.floor(wy / TILE), 0, MAPH - 1);
+        var h = (tileHeight(s, tx - 1, ty - 1) + tileHeight(s, tx, ty - 1) + tileHeight(s, tx - 1, ty) + tileHeight(s, tx, ty)) / 4;
+        pos.setY(i, h);
+        var isW = s.water.indexOf(tx + "," + ty) >= 0;
+        var nearW = isW || s.water.indexOf((tx + 1) + "," + ty) >= 0 || s.water.indexOf(tx + "," + (ty + 1)) >= 0 || s.water.indexOf((tx - 1) + "," + ty) >= 0 || s.water.indexOf(tx + "," + (ty - 1)) >= 0;
+        var rnd = ((tx * 31 + ty * 17) % 13) / 13;
+        if (isW) col.setHex(0x9a8a5e);
+        else if (h > 1.05) col.setHex(0x8d8578);
+        else if (h > 0.55) col.setHex(0x7d8a52);
+        else if (nearW) col.setHex(0xb3a06d);
+        else col.setHSL(0.29 + rnd * 0.03, 0.42, 0.30 + rnd * 0.07);
+        colors.push(col.r, col.g, col.b);
+      }
+      geo.setAttribute("color", new THREE.Float32BufferAttribute(colors, 3));
+      geo.computeVertexNormals();
+      var terr = new THREE.Mesh(geo, new THREE.MeshStandardMaterial({ vertexColors: true, roughness: 1, metalness: 0, map: groundTexture(s) }));
+      terr.receiveShadow = true; T3.world.add(terr);
+      // animated water sheet in the low places
+      var wgeo = new THREE.PlaneGeometry(MAPW * 2, MAPH * 2, 1, 1); wgeo.rotateX(-Math.PI / 2);
+      T3.waterMesh = new THREE.Mesh(wgeo, new THREE.MeshPhongMaterial({ color: 0x2f7d99, transparent: true, opacity: 0.78, shininess: 90, specular: 0x99d4e8 }));
+      T3.waterMesh.position.y = -0.16; T3.world.add(T3.waterMesh);
+      // placement ghost
+      if (T3.ghost){ T3.scene.remove(T3.ghost); T3.ghost.geometry.dispose(); }
+      T3.ghost = new THREE.Mesh(new THREE.BoxGeometry(2, 1.4, 2),
+        new THREE.MeshBasicMaterial({ color: 0x53d769, transparent: true, opacity: 0.38, depthWrite: false }));
+      T3.ghost.visible = false; T3.scene.add(T3.ghost); T3.ghostType = null;
+    }
+
+    function makeBuildingMesh(b){
+      var s = G, bt = BUILD_TYPES[b.type];
+      var fac = b.owner === "player" ? s.pf : s.ef;
+      var g = new THREE.Group();
+      var w = b.w * 2, d = b.h * 2;
+      var wall = mat3(0xe6d3a3), stone = mat3(0x8d8175), stoneD = mat3(0x6e6257), wood = mat3(0x7e4a26);
+      if (b.type === "farm"){
+        g.add(box3(w - 0.2, 0.22, d - 0.2, mat3(0x79a848), 0, 0.11, 0));
+        for (var i = -1; i <= 1; i++) g.add(box3(w - 0.5, 0.3, 0.28, mat3(0x9ccc65), 0, 0.2, i * 1.1));
+      } else if (b.type === "temple" || b.type === "wonder"){
+        var steps = b.type === "wonder" ? 5 : 3, sh = 0.62;
+        for (var k = 0; k < steps; k++){
+          var sw = w * (1 - k * 0.17), sd = d * (1 - k * 0.17);
+          g.add(box3(sw, sh, sd, k % 2 ? stoneD : stone, 0, sh * (k + 0.5), 0));
+        }
+        var top = new THREE.Mesh(new THREE.SphereGeometry(b.type === "wonder" ? 0.85 : 0.5, 12, 10), mat3(0xe3b93c, 0.35));
+        top.position.y = sh * steps + 0.4; top.castShadow = true; g.add(top);
+        var bn = banner3(fac, 3.4); bn.position.set(w / 2 + 0.4, 0, d / 2 - 0.4); g.add(bn);
+      } else if (b.type === "tower"){
+        var tw = new THREE.Mesh(new THREE.CylinderGeometry(0.85, 1.05, 3.6, 8), stone);
+        tw.position.y = 1.8; tw.castShadow = true; tw.receiveShadow = true; g.add(tw);
+        var rf = new THREE.Mesh(new THREE.ConeGeometry(1.5, 1.1, 8), facDarkMat3(fac));
+        rf.position.y = 4.15; rf.castShadow = true; g.add(rf);
+        var bn2 = banner3(fac, 3.1); bn2.position.set(1.1, 2.6, 0); g.add(bn2);
+      } else {
+        var wallH = b.type === "kraton" ? 1.9 : 1.25;
+        g.add(box3(w - 0.3, wallH, d - 0.3, wall, 0, wallH / 2, 0));
+        g.add(box3(w - 0.1, 0.22, d - 0.1, wood, 0, 0.11, 0));
+        var tiers = b.type === "kraton" ? 3 : (b.type === "barracks" || b.type === "market" ? 2 : 1);
+        for (var t = 0; t < tiers; t++){
+          var rw = (w + 0.7) * (1 - t * 0.24), rd = (d + 0.7) * (1 - t * 0.24);
+          var roof = new THREE.Mesh(new THREE.ConeGeometry(Math.max(rw, rd) * 0.66, 1.5, 4), t === 0 && b.type !== "house" ? facDarkMat3(fac) : (b.type === "house" ? mat3(0x9a5a30) : facDarkMat3(fac)));
+          roof.rotation.y = Math.PI / 4; roof.scale.set(rw / Math.max(rw, rd), 1, rd / Math.max(rw, rd));
+          roof.position.y = wallH + 0.72 + t * 0.85; roof.castShadow = true; g.add(roof);
+        }
+        if (b.type === "kraton"){
+          var tip = new THREE.Mesh(new THREE.SphereGeometry(0.34, 10, 8), mat3(0xe3b93c, 0.35));
+          tip.position.y = wallH + 0.72 + 2 * 0.85 + 1.4; g.add(tip);
+          var bn3 = banner3(fac, 3.6); bn3.position.set(-w / 2 - 0.3, 0, d / 2 - 0.5); g.add(bn3);
+          var bn4 = banner3(fac, 3.6); bn4.position.set(w / 2 + 0.3, 0, d / 2 - 0.5); g.add(bn4);
+        }
+        if (b.type === "market"){
+          g.add(box3(w * 0.7, 0.14, 1.6, facMat3(fac), 0, 1.05, d / 2 + 0.7));
+        }
+        if (b.type === "barracks"){
+          var bn5 = banner3(fac, 3.2); bn5.position.set(w / 2 + 0.3, 0, -d / 2 + 0.5); g.add(bn5);
+        }
+      }
+      var ring = ring3(Math.max(w, d) * 0.72); g.add(ring); g.userData.ring = ring;
+      g.position.set(w2x(b.x + b.w * TILE / 2), 0, w2z(b.y + b.h * TILE / 2));
+      return g;
+    }
+    function makeUnitMesh(u){
+      var s = G, fac = u.owner === "player" ? s.pf : s.ef;
+      var g = new THREE.Group();
+      if (u.type === "elephant"){
+        var body = box3(2.3, 1.35, 1.45, mat3(0x8d8578), 0, 1.25, 0); g.add(body);
+        var head = new THREE.Mesh(new THREE.SphereGeometry(0.62, 10, 8), mat3(0x7d7466));
+        head.position.set(1.35, 1.45, 0); head.castShadow = true; g.add(head);
+        var trunk = new THREE.Mesh(new THREE.CylinderGeometry(0.13, 0.09, 1.0, 6), mat3(0x7d7466));
+        trunk.position.set(1.8, 0.85, 0); trunk.rotation.z = 0.25; g.add(trunk);
+        g.add(box3(1.1, 0.55, 1.1, facMat3(fac), -0.2, 2.2, 0));
+        var tip2 = new THREE.Mesh(new THREE.SphereGeometry(0.16, 8, 6), mat3(0xe3b93c, 0.35));
+        tip2.position.set(-0.2, 2.6, 0); g.add(tip2);
+        [[0.75, 0.5], [0.75, -0.5], [-0.75, 0.5], [-0.75, -0.5]].forEach(function(p){
+          var leg = box3(0.34, 0.9, 0.34, mat3(0x7d7466), p[0], 0.45, p[1]); g.add(leg);
+        });
+      } else {
+        var legL = box3(0.16, 0.5, 0.16, mat3(0x4a3826), 0, 0.25, 0.14);
+        var legR = box3(0.16, 0.5, 0.16, mat3(0x4a3826), 0, 0.25, -0.14);
+        g.add(legL); g.add(legR); g.userData.legL = legL; g.userData.legR = legR;
+        var torso = new THREE.Mesh(new THREE.CylinderGeometry(0.21, 0.27, 0.62, 8), facMat3(fac));
+        torso.position.y = 0.82; torso.castShadow = true; g.add(torso);
+        var head2 = new THREE.Mesh(new THREE.SphereGeometry(0.21, 10, 8), mat3(0xe8c9a0));
+        head2.position.y = 1.32; head2.castShadow = true; g.add(head2);
+        var band = new THREE.Mesh(new THREE.CylinderGeometry(0.22, 0.22, 0.1, 8), facDarkMat3(fac));
+        band.position.y = 1.44; g.add(band);
+        var wpn;
+        if (u.type === "spearman"){ wpn = new THREE.Mesh(new THREE.CylinderGeometry(0.03, 0.03, 1.7, 5), mat3(0x5d4028)); wpn.position.set(0.3, 1.1, 0.2); wpn.rotation.z = -0.35; }
+        else if (u.type === "swordsman"){ wpn = box3(0.07, 1.0, 0.16, mat3(0xbdbdbd, 0.35), 0.38, 1.0, 0.15); }
+        else if (u.type === "archer"){ wpn = new THREE.Mesh(new THREE.TorusGeometry(0.36, 0.035, 6, 12, Math.PI), mat3(0x5d4028)); wpn.position.set(0.3, 0.95, 0.15); wpn.rotation.z = -Math.PI / 2; }
+        else if (u.type === "gunner"){ wpn = box3(1.0, 0.07, 0.07, mat3(0x333333, 0.5), 0.45, 1.05, 0.15); }
+        else { wpn = box3(0.06, 0.85, 0.06, mat3(0x5d4028), 0.3, 0.8, 0.18); wpn.rotation.z = 0.5; }
+        if (wpn){ wpn.castShadow = true; g.add(wpn); }
+      }
+      var ring = ring3(u.type === "elephant" ? 1.9 : 0.62); g.add(ring); g.userData.ring = ring;
+      return g;
+    }
+    function makeNodeMesh(n){
+      var g = new THREE.Group();
+      if (n.type === "tree"){
+        var trunk = new THREE.Mesh(new THREE.CylinderGeometry(0.14, 0.2, 1.1, 6), mat3(0x5d4028));
+        trunk.position.y = 0.55; trunk.castShadow = true; g.add(trunk);
+        var f1 = new THREE.Mesh(new THREE.SphereGeometry(1.05, 9, 7), mat3(0x2c5b2a));
+        f1.position.y = 1.8; f1.castShadow = true; g.add(f1);
+        var f2 = new THREE.Mesh(new THREE.SphereGeometry(0.7, 8, 6), mat3(0x3a7034));
+        f2.position.set(0.55, 1.35, 0.3); f2.castShadow = true; g.add(f2);
+      } else if (n.type === "rice"){
+        g.add(box3(1.9, 0.14, 1.9, mat3(0x86b04c), 0, 0.07, 0));
+        for (var i = 0; i < 5; i++){
+          var stalk = new THREE.Mesh(new THREE.ConeGeometry(0.16, 0.6, 5), mat3(0xa9c96e));
+          stalk.position.set(-0.7 + (i % 3) * 0.7, 0.4, -0.5 + Math.floor(i / 3) * 0.9); g.add(stalk);
+        }
+      } else if (n.type === "gold"){
+        var rock = new THREE.Mesh(new THREE.DodecahedronGeometry(0.8), mat3(0x6e6257));
+        rock.position.y = 0.5; rock.castShadow = true; g.add(rock);
+        [[0.4, 0.75, 0.2], [-0.3, 0.6, 0.45]].forEach(function(p){
+          var nug = new THREE.Mesh(new THREE.SphereGeometry(0.2, 8, 6), mat3(0xe3b93c, 0.3));
+          nug.position.set(p[0], p[1], p[2]); g.add(nug);
+        });
+      } else {
+        var st = new THREE.Mesh(new THREE.DodecahedronGeometry(0.9), mat3(0x8d8d84));
+        st.position.y = 0.55; st.castShadow = true; g.add(st);
+        var st2 = new THREE.Mesh(new THREE.DodecahedronGeometry(0.5), mat3(0xa9a99e));
+        st2.position.set(0.7, 0.3, 0.4); g.add(st2);
+      }
+      g.position.set(w2x(n.x), 0, w2z(n.y));
+      return g;
+    }
+
+    function sync3D(s){
+      if (T3.builtFor !== s){ buildWorld(s); T3.builtFor = s; }
+      var t = T3.time;
+      // buildings
+      var seenB = {};
+      s.buildings.forEach(function(b){
+        seenB[b.id] = 1;
+        var g = T3.bMeshes[b.id];
+        if (!g){ g = makeBuildingMesh(b); T3.bMeshes[b.id] = g; T3.world.add(g); }
+        var cx = b.x + b.w * TILE / 2, cy = b.y + b.h * TILE / 2;
+        g.position.set(w2x(cx), groundH(s, cx, cy), w2z(cy));
+        g.userData.ring.visible = (s.selBuilding === b);
+        g.scale.y = b.built ? 1 : 0.25 + 0.75 * clamp(b.hp / b.maxHp, 0, 1);
+      });
+      Object.keys(T3.bMeshes).forEach(function(id){ if (!seenB[id]){ T3.world.remove(T3.bMeshes[id]); delete T3.bMeshes[id]; } });
+      // nodes
+      var seenN = {};
+      s.nodes.forEach(function(n){
+        seenN[n.id] = 1;
+        var g = T3.nMeshes[n.id];
+        if (!g){ g = makeNodeMesh(n); T3.nMeshes[n.id] = g; T3.world.add(g); g.position.y = groundH(s, n.x, n.y); }
+      });
+      Object.keys(T3.nMeshes).forEach(function(id){ if (!seenN[id]){ T3.world.remove(T3.nMeshes[id]); delete T3.nMeshes[id]; } });
+      // units
+      var seenU = {};
+      s.units.forEach(function(u){
+        seenU[u.id] = 1;
+        var g = T3.uMeshes[u.id];
+        if (!g){ g = makeUnitMesh(u); T3.uMeshes[u.id] = g; T3.world.add(g); g.userData.px = u.x; g.userData.py = u.y; }
+        var moving = (u.state === "move" || u.state === "tonode" || u.state === "tofarm" || u.state === "tobuild" || u.state === "attackmove");
+        var dx = u.x - g.userData.px, dy = u.y - g.userData.py;
+        if (dx * dx + dy * dy > 0.001) g.rotation.y = Math.atan2(-dy, dx); // face the travel direction
+        g.userData.px = u.x; g.userData.py = u.y;
+        var bob = moving ? Math.abs(Math.sin(t * 9 + u.id * 1.7)) * 0.09 : 0;
+        var us = u.type === "elephant" ? 1.15 : 1.35;
+        g.scale.set(us, us, us);
+        g.position.set(w2x(u.x), groundH(s, u.x, u.y) + bob, w2z(u.y));
+        if (g.userData.legL){ var sw = moving ? Math.sin(t * 9 + u.id * 1.7) * 0.45 : 0; g.userData.legL.rotation.x = sw; g.userData.legR.rotation.x = -sw; }
+        g.userData.ring.visible = s.selected.indexOf(u) >= 0;
+        g.userData.ring.material.opacity = 0.7 + Math.sin(t * 5) * 0.3;
+      });
+      Object.keys(T3.uMeshes).forEach(function(id){ if (!seenU[id]){ T3.world.remove(T3.uMeshes[id]); delete T3.uMeshes[id]; } });
+      // banners wave
+      T3.world.traverse(function(o){ if (o.userData && o.userData.cloth) o.userData.cloth.rotation.y = Math.sin(t * 2.4 + o.id) * 0.28; });
+      // shots
+      while (T3.shotGroup.children.length){ var ch = T3.shotGroup.children[0]; T3.shotGroup.remove(ch); if (ch.geometry) ch.geometry.dispose(); if (ch.material) ch.material.dispose(); }
+      s.shots.forEach(function(sh){
+        var pts = [new THREE.Vector3(w2x(sh.x1), groundH(s, sh.x1, sh.y1) + 1.1, w2z(sh.y1)), new THREE.Vector3(w2x(sh.x2), groundH(s, sh.x2, sh.y2) + 1.0, w2z(sh.y2))];
+        var line = new THREE.Line(new THREE.BufferGeometry().setFromPoints(pts),
+          new THREE.LineBasicMaterial({ color: sh.gun ? 0xffdc78 : 0xf0e6c8 }));
+        T3.shotGroup.add(line);
+      });
+      // placement ghost: green fits, red blocked
+      if (s.placeType && s.mouse.in){
+        var bt = BUILD_TYPES[s.placeType];
+        var tx = Math.floor(s.mouse.wx / TILE), ty = Math.floor(s.mouse.wy / TILE);
+        if (T3.ghostType !== s.placeType){
+          T3.ghostType = s.placeType;
+          T3.ghost.geometry.dispose();
+          T3.ghost.geometry = new THREE.BoxGeometry(bt.w * 2, 1.4, bt.h * 2);
+        }
+        var gx = tx * TILE + bt.w * TILE / 2, gy = ty * TILE + bt.h * TILE / 2;
+        T3.ghost.position.set(w2x(gx), groundH(s, gx, gy) + 0.7, w2z(gy));
+        T3.ghost.material.color.setHex(canPlace(s.placeType, tx, ty) ? 0x53d769 : 0xe5482e);
+        T3.ghost.visible = true;
+      } else T3.ghost.visible = false;
+      // camera: top-down angle, pan from G.cam, zoom and turn from G.view
+      var cxw = s.cam.x + canvas.clientWidth / 2, cyw = s.cam.y + canvas.clientHeight / 2;
+      var tx3 = w2x(cxw), tz3 = w2z(cyw);
+      var dist = 64 / (s.view ? s.view.zoom : 1);
+      var el = 0.96, rot = s.view ? s.view.rot : 0;
+      T3.camera.position.set(tx3 + Math.sin(rot) * Math.cos(el) * dist, Math.sin(el) * dist, tz3 + Math.cos(rot) * Math.cos(el) * dist);
+      T3.camera.lookAt(tx3, 0, tz3);
+      T3.sun.position.set(tx3 + 42, 64, tz3 + 26);
+      T3.sun.target.position.set(tx3, 0, tz3);
+      if (T3.waterMesh) T3.waterMesh.position.y = -0.16 + Math.sin(t * 1.25) * 0.035;
+      var cw = canvas.clientWidth, chh = canvas.clientHeight;
+      if (cw && chh){
+        var sz = T3.renderer.getSize(new THREE.Vector2());
+        if (Math.abs(sz.x - cw) > 2 || Math.abs(sz.y - chh) > 2) T3.renderer.setSize(cw, chh, false);
+        T3.camera.aspect = cw / chh; T3.camera.updateProjectionMatrix();
+      }
+      T3.renderer.render(T3.scene, T3.camera);
+    }
+    function raycastGround(clientX, clientY){
+      if (!T3.ok || !T3.camera) return null;
+      var r = canvas.getBoundingClientRect();
+      var nx = ((clientX - r.left) / r.width) * 2 - 1, ny = -((clientY - r.top) / r.height) * 2 + 1;
+      T3.raycaster.setFromCamera({ x: nx, y: ny }, T3.camera);
+      var pt = new THREE.Vector3();
+      var hit = T3.raycaster.ray.intersectPlane(T3.groundPlane, pt);
+      if (!hit) return null;
+      return { x: x2w(pt.x), y: z2w(pt.z) };
+    }
+    function render(){
+      var s = G; if (!s) return;
+      init3D();
+      if (T3.ok){ T3.time += 1 / 60; try { sync3D(s); } catch (err) { T3.ok = false; render2D(); } }
+      else render2D();
+    }
+
+    function render2D(){
+      var s = G; if (!s) return;
+      var W = canvas.clientWidth, H = canvas.clientHeight;
+      ctx.fillStyle = "#2f4a26"; ctx.fillRect(0, 0, W, H);
+      var cam = s.cam;
+      var x0 = Math.max(0, Math.floor(cam.x / TILE)), y0 = Math.max(0, Math.floor(cam.y / TILE));
+      var x1 = Math.min(MAPW - 1, x0 + Math.ceil(W / TILE) + 1), y1 = Math.min(MAPH - 1, y0 + Math.ceil(H / TILE) + 1);
+      var x, y;
+      for (y = y0; y <= y1; y++) for (x = x0; x <= x1; x++){
+        var px = x * TILE - cam.x, py = y * TILE - cam.y;
+        if (s.water.indexOf(x + "," + y) >= 0){
+          ctx.fillStyle = ((x + y) % 2) ? "#2e6f79" : "#2a6670"; ctx.fillRect(px, py, TILE, TILE);
+          ctx.fillStyle = "rgba(255,255,255,.10)"; ctx.fillRect(px + 4, py + 10 + ((x * 7 + y * 3) % 12), 12, 2);
+        } else {
+          ctx.fillStyle = ((x + y) % 2) ? "#38592c" : "#334f28"; ctx.fillRect(px, py, TILE, TILE);
+          ctx.fillStyle = "rgba(0,0,0,.06)"; ctx.fillRect(px + ((x * 13 + y * 7) % 22), py + ((x * 5 + y * 11) % 22), 5, 3);
+        }
+      }
+      // nodes
+      s.nodes.forEach(function(n){ drawNode(n, cam); });
+      // farms under buildings pass
+      s.buildings.forEach(function(b){ drawBuilding(b, cam); });
+      // placement ghost
+      if (s.placeType && s.mouse.in){
+        var bt = BUILD_TYPES[s.placeType];
+        var gx = Math.floor(s.mouse.wx / TILE) * TILE - cam.x, gy = Math.floor(s.mouse.wy / TILE) * TILE - cam.y;
+        ctx.strokeStyle = canPlace(s.placeType, Math.floor(s.mouse.wx / TILE), Math.floor(s.mouse.wy / TILE)) ? "#e8c95c" : "#c0452c";
+        ctx.lineWidth = 2; ctx.strokeRect(gx, gy, bt.w * TILE, bt.h * TILE);
+        ctx.fillStyle = "rgba(232,201,92,.18)"; ctx.fillRect(gx, gy, bt.w * TILE, bt.h * TILE);
+      }
+      // units sorted by y
+      var us = s.units.slice().sort(function(a, b){ return a.y - b.y; });
+      us.forEach(function(u){ drawUnit(u, cam); });
+      // shots
+      s.shots.forEach(function(sh){
+        ctx.strokeStyle = sh.gun ? "rgba(255,220,120,.95)" : "rgba(240,230,200,.8)";
+        ctx.lineWidth = sh.gun ? 2 : 1;
+        ctx.beginPath(); ctx.moveTo(sh.x1 - cam.x, sh.y1 - cam.y); ctx.lineTo(sh.x2 - cam.x, sh.y2 - cam.y); ctx.stroke();
+      });
+      // selection box
+      if (s.mouse.down && s.mouse.moved){
+        ctx.strokeStyle = "#e8c95c"; ctx.lineWidth = 1;
+        ctx.strokeRect(Math.min(s.mouse.sx, s.mouse.x), Math.min(s.mouse.sy, s.mouse.y), Math.abs(s.mouse.x - s.mouse.sx), Math.abs(s.mouse.y - s.mouse.sy));
+      }
+    }
+    function drawNode(n, cam){
+      var px = n.x - cam.x, py = n.y - cam.y;
+      if (px < -40 || py < -40 || px > canvas.clientWidth + 40 || py > canvas.clientHeight + 40) return;
+      ctx.fillStyle = "rgba(0,0,0,.18)"; ctx.beginPath(); ctx.ellipse(px, py + 8, 13, 4, 0, 0, 7); ctx.fill();
+      if (n.type === "tree"){
+        ctx.fillStyle = "#5d4028"; ctx.fillRect(px - 2, py, 4, 9);
+        ctx.fillStyle = "#2c5b2a"; ctx.beginPath(); ctx.arc(px, py - 6, 11, 0, 7); ctx.fill();
+        ctx.fillStyle = "#3a7034"; ctx.beginPath(); ctx.arc(px - 6, py - 2, 7, 0, 7); ctx.arc(px + 6, py - 3, 8, 0, 7); ctx.fill();
+      } else if (n.type === "rice"){
+        ctx.fillStyle = "#7fae4c"; ctx.fillRect(px - 13, py - 6, 26, 13);
+        ctx.strokeStyle = "#a9c96e"; ctx.lineWidth = 1;
+        for (var i = -8; i <= 8; i += 4){ ctx.beginPath(); ctx.moveTo(px + i, py + 6); ctx.lineTo(px + i + 2, py - 5); ctx.stroke(); }
+      } else if (n.type === "gold"){
+        ctx.fillStyle = "#6e6257"; ctx.beginPath(); ctx.moveTo(px - 12, py + 7); ctx.lineTo(px - 4, py - 6); ctx.lineTo(px + 5, py - 2); ctx.lineTo(px + 12, py + 7); ctx.closePath(); ctx.fill();
+        ctx.fillStyle = "#e3b93c"; ctx.beginPath(); ctx.arc(px - 3, py + 1, 3, 0, 7); ctx.arc(px + 5, py + 3, 2.4, 0, 7); ctx.fill();
+      } else {
+        ctx.fillStyle = "#8d8d84"; ctx.beginPath(); ctx.moveTo(px - 12, py + 7); ctx.lineTo(px - 2, py - 8); ctx.lineTo(px + 11, py + 7); ctx.closePath(); ctx.fill();
+        ctx.fillStyle = "#a9a99e"; ctx.beginPath(); ctx.moveTo(px - 2, py - 8); ctx.lineTo(px + 11, py + 7); ctx.lineTo(px + 2, py + 7); ctx.closePath(); ctx.fill();
+      }
+    }
+    function drawBuilding(b, cam){
+      var s = G, bt = BUILD_TYPES[b.type];
+      var px = b.x - cam.x, py = b.y - cam.y, w = b.w * TILE, h = b.h * TILE;
+      if (px + w < -20 || py + h < -20 || px > canvas.clientWidth + 20 || py > canvas.clientHeight + 20) return;
+      var fac = b.owner === "player" ? s.pf : s.ef;
+      var sel = (s.selBuilding === b);
+      ctx.fillStyle = "rgba(0,0,0,.25)"; ctx.fillRect(px + 5, py + h - 4, w, 8);
+      if (b.type === "farm"){
+        ctx.fillStyle = "#79a848"; ctx.fillRect(px + 2, py + 2, w - 4, h - 4);
+        ctx.strokeStyle = "#93bd5e"; for (var i = 8; i < w - 4; i += 9){ ctx.beginPath(); ctx.moveTo(px + i, py + h - 5); ctx.lineTo(px + i + 2, py + 5); ctx.stroke(); }
+        if (b.rice <= 0){ ctx.fillStyle = "rgba(90,70,40,.5)"; ctx.fillRect(px + 2, py + 2, w - 4, h - 4); }
+      } else if (b.type === "temple" || b.type === "wonder"){
+        var steps = b.type === "wonder" ? 5 : 3, sh = h / steps;
+        for (var i2 = 0; i2 < steps; i2++){
+          var inset = i2 * (w / steps) * 0.32;
+          ctx.fillStyle = i2 % 2 ? "#7d7268" : "#8d8175";
+          ctx.fillRect(px + inset, py + h - sh * (i2 + 1), w - inset * 2, sh);
+          ctx.fillStyle = "rgba(0,0,0,.15)"; ctx.fillRect(px + inset, py + h - sh * (i2 + 1), w - inset * 2, 3);
+        }
+        ctx.fillStyle = b.type === "wonder" ? "#e3b93c" : "#a8431f";
+        ctx.beginPath(); ctx.arc(px + w / 2, py + 4, b.type === "wonder" ? 8 : 5, 0, 7); ctx.fill();
+      } else if (b.type === "tower"){
+        ctx.fillStyle = "#8d8175"; ctx.fillRect(px + 4, py + 6, w - 8, h - 6);
+        ctx.fillStyle = "#6e6257"; ctx.fillRect(px + 1, py, w - 2, 9);
+        ctx.fillStyle = fac.color; ctx.fillRect(px + w/2 - 2, py - 6, 4, 7);
+      } else {
+        // walls + roof (pseudo-3D)
+        ctx.fillStyle = "#c9b489"; ctx.fillRect(px + 3, py + h * 0.42, w - 6, h * 0.58 - 2);
+        ctx.fillStyle = "#a08c5f"; ctx.fillRect(px + 3, py + h - 8, w - 6, 6);
+        ctx.fillStyle = b.type === "kraton" ? fac.dark : "#7e4a26";
+        ctx.beginPath();
+        ctx.moveTo(px - 2, py + h * 0.48); ctx.lineTo(px + w / 2, py - (b.type === "kraton" ? 12 : 4)); ctx.lineTo(px + w + 2, py + h * 0.48); ctx.closePath(); ctx.fill();
+        ctx.fillStyle = fac.color; ctx.fillRect(px + w / 2 - 2, py + h * 0.42, 4, h * 0.3);
+        if (b.type === "kraton"){ ctx.fillStyle = "#e3b93c"; ctx.beginPath(); ctx.arc(px + w / 2, py - 12, 4, 0, 7); ctx.fill(); }
+      }
+      if (!b.built){
+        ctx.fillStyle = "rgba(20,16,10,.45)"; ctx.fillRect(px, py, w, h);
+        ctx.strokeStyle = "#e8c95c"; ctx.setLineDash([5, 4]); ctx.strokeRect(px + 1, py + 1, w - 2, h - 2); ctx.setLineDash([]);
+      }
+      if (sel){ ctx.strokeStyle = "#e8c95c"; ctx.lineWidth = 2; ctx.strokeRect(px - 3, py - 3, w + 6, h + 6); ctx.lineWidth = 1; }
+      // hp bar
+      if (b.hp < b.maxHp){
+        ctx.fillStyle = "rgba(0,0,0,.55)"; ctx.fillRect(px, py - 9, w, 5);
+        ctx.fillStyle = b.hp / b.maxHp > .35 ? "#7fae4c" : "#c0452c"; ctx.fillRect(px + 1, py - 8, (w - 2) * Math.max(0, b.hp / b.maxHp), 3);
+      }
+      if (b.queue.length){
+        ctx.fillStyle = "rgba(20,16,10,.75)"; ctx.fillRect(px, py + h + 4, w, 5);
+        ctx.fillStyle = "#e3b93c"; var need = UNIT_TYPES[b.queue[0]].time; ctx.fillRect(px, py + h + 4, w * clamp(b.qt / need, 0, 1), 5);
+      }
+    }
+    function drawUnit(u, cam){
+      var s = G;
+      var px = u.x - cam.x, py = u.y - cam.y;
+      if (px < -40 || py < -40 || px > canvas.clientWidth + 40 || py > canvas.clientHeight + 40) return;
+      var fac = u.owner === "player" ? s.pf : s.ef;
+      var sel = s.selected.indexOf(u) >= 0;
+      ctx.fillStyle = "rgba(0,0,0,.25)"; ctx.beginPath(); ctx.ellipse(px, py + 7, u.type === "elephant" ? 15 : 8, 3.5, 0, 0, 7); ctx.fill();
+      if (sel){ ctx.strokeStyle = "#e8c95c"; ctx.lineWidth = 2; ctx.beginPath(); ctx.ellipse(px, py + 7, u.type === "elephant" ? 17 : 10, 5, 0, 0, 7); ctx.stroke(); ctx.lineWidth = 1; }
+      if (u.type === "elephant"){
+        ctx.fillStyle = "#8d8578"; ctx.beginPath(); ctx.ellipse(px, py - 4, 15, 11, 0, 0, 7); ctx.fill();
+        ctx.fillStyle = "#7d7466"; ctx.beginPath(); ctx.arc(px + 13, py - 7, 6, 0, 7); ctx.fill();
+        ctx.fillRect(px + 16, py - 4, 3, 9);
+        ctx.fillStyle = fac.color; ctx.fillRect(px - 8, py - 16, 16, 7);
+        ctx.fillStyle = "#e3b93c"; ctx.fillRect(px - 2, py - 20, 4, 5);
+      } else {
+        // body
+        ctx.fillStyle = fac.color; ctx.beginPath(); ctx.arc(px, py - 2, 7, 0, 7); ctx.fill();
+        ctx.fillStyle = "#e8c9a0"; ctx.beginPath(); ctx.arc(px, py - 10, 4, 0, 7); ctx.fill();
+        ctx.strokeStyle = "#2b2118"; ctx.lineWidth = 2;
+        if (u.type === "spearman"){ ctx.beginPath(); ctx.moveTo(px + 6, py + 4); ctx.lineTo(px + 9, py - 16); ctx.stroke(); }
+        else if (u.type === "swordsman"){ ctx.beginPath(); ctx.moveTo(px + 7, py - 12); ctx.lineTo(px + 7, py + 2); ctx.moveTo(px + 3, py - 8); ctx.lineTo(px + 11, py - 8); ctx.stroke(); }
+        else if (u.type === "archer"){ ctx.beginPath(); ctx.arc(px + 8, py - 5, 6, -1.2, 1.2); ctx.stroke(); }
+        else if (u.type === "gunner"){ ctx.beginPath(); ctx.moveTo(px + 3, py - 6); ctx.lineTo(px + 13, py - 8); ctx.stroke(); }
+        else if (u.type === "villager"){ ctx.beginPath(); ctx.moveTo(px + 6, py - 8); ctx.lineTo(px + 10, py + 3); ctx.stroke(); }
+        ctx.lineWidth = 1;
+      }
+      if (u.hp < u.maxHp){
+        ctx.fillStyle = "rgba(0,0,0,.55)"; ctx.fillRect(px - 9, py - 20, 18, 4);
+        ctx.fillStyle = u.hp / u.maxHp > .35 ? "#7fae4c" : "#c0452c"; ctx.fillRect(px - 8, py - 19, 16 * Math.max(0, u.hp / u.maxHp), 2);
+      }
+    }
+    function drawMinimap(){
+      var s = G; if (!s) return;
+      var W = mm.width, H = mm.height, sx = W / MAPW, sy = H / MAPH;
+      mmCtx.fillStyle = "#334f28"; mmCtx.fillRect(0, 0, W, H);
+      mmCtx.fillStyle = "#2e6f79";
+      s.water.forEach(function(k){ var p = k.split(","); mmCtx.fillRect(p[0] * sx, p[1] * sy, sx + 1, sy + 1); });
+      s.nodes.forEach(function(n){ mmCtx.fillStyle = n.type === "gold" ? "#e3b93c" : (n.type === "tree" ? "#2c5b2a" : "#7fae4c"); mmCtx.fillRect(n.tx * sx, n.ty * sy, 2.4, 2.4); });
+      s.buildings.forEach(function(b){ mmCtx.fillStyle = b.owner === "player" ? s.pf.color : s.ef.color; mmCtx.fillRect(b.tx * sx, b.ty * sy, Math.max(3, b.w * sx), Math.max(3, b.h * sy)); });
+      s.units.forEach(function(u){ mmCtx.fillStyle = u.owner === "player" ? "#f3e9d2" : "#ff7a5c"; mmCtx.fillRect(u.x / TILE * sx - 1, u.y / TILE * sy - 1, 2.6, 2.6); });
+      mmCtx.strokeStyle = "#f3e9d2"; mmCtx.lineWidth = 1.4;
+      mmCtx.strokeRect(s.cam.x / TILE * sx, s.cam.y / TILE * sy, canvas.clientWidth / TILE * sx, canvas.clientHeight / TILE * sy);
+    }
+
+    /* ============================================================
+       HUD + COMMANDS
+       ============================================================ */
+    var $ = function(id){ return document.getElementById(id); };
+    function refreshTopBar(){
+      var s = G; if (!s) return;
+      $("res-rice").textContent = Math.floor(s.res.rice);
+      $("res-wood").textContent = Math.floor(s.res.wood);
+      $("res-gold").textContent = Math.floor(s.res.gold);
+      $("res-stone").textContent = Math.floor(s.res.stone);
+      $("res-pop").textContent = popUsed(s, "player") + "/" + popCap(s, "player");
+      $("res-time").textContent = s.cfg.goalType === "survive" ? fmtTime(s.surviveLeft) : fmtTime(s.t);
+      $("rate-rice").textContent = s.rates.rice > 0.05 ? "+" + s.rates.rice.toFixed(1) : "";
+      $("rate-wood").textContent = s.rates.wood > 0.05 ? "+" + s.rates.wood.toFixed(1) : "";
+      $("rate-gold").textContent = s.rates.gold > 0.05 ? "+" + s.rates.gold.toFixed(1) : "";
+      $("rate-stone").textContent = s.rates.stone > 0.05 ? "+" + s.rates.stone.toFixed(1) : "";
+    }
+    function updateAgeBtn(){
+      var s = G; if (!s) return;
+      var btn = $("btn-age"); if (!btn) return;
+      if (s.age >= 4){ btn.textContent = "Top age"; btn.disabled = true; }
+      else if (s.ageBusy){ btn.textContent = "Rite runs… " + Math.ceil(s.ageTimer) + "s"; btn.disabled = true; }
+      else {
+        var c = AGES[s.age].cost;
+        var needTemple = s.age >= 2 && !s.buildings.some(function(b){ return b.owner === "player" && b.type === "temple" && b.built && !b.dead; });
+        btn.textContent = "Advance: " + costText(c) + (needTemple ? " · needs Temple" : "");
+        btn.disabled = !canAfford(s.res, c) || needTemple;
+      }
+    }
+    function refreshHUD(){
+      var s = G; if (!s) return;
+      refreshTopBar();
+      $("age-name").textContent = "Age " + ["I","II","III","IV"][s.age - 1] + " · " + AGES[s.age - 1].name;
+      updateAgeBtn();
+      $("obj-title").textContent = s.cfg.title || "Skirmish";
+      $("obj-text").textContent = s.cfg.goalText;
+      refreshSelectionCard();
+    }
+    function alertMsg(text, kind){
+      var strip = $("alert-strip"); if (!strip) return;
+      var d = document.createElement("div");
+      d.className = "alert" + (kind === "good" ? " good" : kind === "info" ? " info" : "");
+      d.textContent = text; strip.appendChild(d);
+      setTimeout(function(){ if (d.parentNode) d.parentNode.removeChild(d); }, 4200);
+      while (strip.children.length > 3) strip.removeChild(strip.firstChild);
+    }
+
+    /* ---------------- next-step hint + guide ---------------- */
+    function computeHint(s){
+      var selV = s.selected.some(function(u){ return u.type === "villager"; });
+      var selAny = s.selected.length > 0 || s.selBuilding;
+      var gathering = s.units.some(function(u){ return u.owner === "player" && (u.state === "gather" || u.state === "farmwork"); });
+      var houses = s.buildings.filter(function(b){ return b.owner === "player" && b.type === "house" && !b.dead; }).length;
+      if (s.placeType) return "Click a green ghost place on the map to place the " + BUILD_TYPES[s.placeType].name + ". Red means the place is blocked.";
+      if (!selAny) return "Click a villager near the Kraton to select it. Drag a box to select a group.";
+      if (selV && !gathering && s.res.rice <= s.startRice + 5) return "Right-click a green rice field. The villager walks there and gathers rice.";
+      if (gathering && houses <= 2 && popUsed(s, "player") >= popCap(s, "player") - 2) return "Build a House. Select a villager. Click Build House in the command grid. Houses raise the people cap.";
+      if (s.selBuilding && s.selBuilding.type === "kraton") return "Click Train Villager in the command grid. A new villager costs 50 rice.";
+      if (selV && !gathering) return "Right-click a tree, a rice field, a gold mine or a stone pile to gather. Right-click open ground to move.";
+      if (s.age === 1 && s.res.rice >= 200) return "Save 300 rice and 100 gold. Then click Advance age in the top bar to reach Age II.";
+      if (gathering) return "The economy runs. Train soldiers at the Barracks. Watch the minimap for enemy troops.";
+      return "Select a unit or a building. The command grid shows the acts for the selection.";
+    }
+    function updateHint(){
+      var s = G, el = $("hint-text"); if (!s || !el) return;
+      el.textContent = computeHint(s);
+    }
+    function updateGuide(){
+      var s = G, card = $("guide-card"); if (!card) return;
+      if (!s || !s.guided || s.guideHidden){ card.classList.remove("show"); return; }
+      card.classList.add("show");
+      // advance steps from real play state
+      var gathering = s.units.some(function(u){ return u.owner === "player" && (u.state === "gather" || u.state === "farmwork" || u.state === "tonode"); });
+      var builtNew = s.stats.built > 0 || s.buildings.some(function(b){ return b.owner === "player" && b.type === "house" && !b.dead && b.tx !== 14 && b.tx !== 6; });
+      var checks = [
+        s.selected.length > 0 || !!s.selBuilding,
+        gathering || s.res.rice > s.startRice + 3,
+        builtNew || s.placeType === "house",
+        s.stats.trained > 0 || (playerKraton(s) && playerKraton(s).queue.length > 0),
+        s.stats.killed > 0 || s.units.some(function(u){ return u.owner === "player" && u.type !== "villager" && u.state === "attackmove"; })
+      ];
+      var step = 0; while (step < checks.length && checks[step]) step++;
+      s.guideStep = step; s.guideDone = step >= checks.length;
+      var lis = card.querySelectorAll("#guide-steps li");
+      lis.forEach(function(li, i){
+        li.classList.toggle("done", i < step);
+        li.classList.toggle("now", i === step);
+      });
+      if (s.guideDone) card.querySelector("h3").textContent = "Guide complete. The court is in your hands.";
+    }
+
+    function refreshSelectionCard(){
+      var s = G, card = $("selection-card"), grid = $("command-grid");
+      if (!s){ card.innerHTML = "<h3>Nothing selected</h3><p>Click a unit or a building.</p>"; grid.innerHTML = ""; return; }
+      grid.innerHTML = "";
+      var CMD_ICONS = { "Train":"✚", "Build":"⌂", "Stop":"■", "Cancel":"✕", "Repair":"⚒" };
+      function cmdBtn(name, cost, fn, opts){
+        opts = opts || {};
+        var b = document.createElement("button");
+        b.type = "button"; b.className = "cmd" + (opts.armed ? " armed" : "");
+        var icon = "";
+        Object.keys(CMD_ICONS).forEach(function(k){ if (name.indexOf(k) === 0) icon = CMD_ICONS[k]; });
+        b.innerHTML = "<span class='cmd-name'><span class='cmd-icon' aria-hidden='true'></span><span class='cmd-label'></span></span><span class='cmd-cost'></span>";
+        b.querySelector(".cmd-icon").textContent = icon || "▸";
+        b.querySelector(".cmd-label").textContent = name;
+        b.querySelector(".cmd-cost").textContent = cost || "";
+        if (opts.tip) b.title = opts.tip;
+        b.disabled = !!opts.disabled;
+        b.addEventListener("click", function(ev){ ev.stopPropagation(); fn(); });
+        grid.appendChild(b); return b;
+      }
+      var sel = s.selected.filter(function(u){ return !u.dead; });
+      if (s.selBuilding && !s.selBuilding.dead){
+        var b = s.selBuilding, bt = BUILD_TYPES[b.type];
+        var html = "<h3>" + bt.name + "</h3><p>" + bt.desc + "</p>";
+        html += "<div class='hpbar'><div style='width:" + Math.max(0, b.hp / b.maxHp * 100) + "%'></div></div>";
+        html += "<p>Health " + Math.ceil(b.hp) + " of " + b.maxHp + (b.built ? "" : " · Under construction") + "</p>";
+        if (b.type === "farm") html += "<p>Rice left: " + Math.ceil(b.rice) + "</p>";
+        card.innerHTML = html;
+        var q = document.createElement("div"); q.id = "queue-row"; card.appendChild(q);
+        b.queue.forEach(function(t, i){
+          var slot = document.createElement("div"); slot.className = "queue-slot";
+          slot.innerHTML = "<div class='fill'></div><span>" + UNIT_TYPES[t].glyph + "</span>";
+          if (i === 0) slot.querySelector(".fill").style.height = clamp(b.qt / UNIT_TYPES[t].time * 100, 0, 100) + "%";
+          q.appendChild(slot);
+        });
+        // training commands
+        var trains = { kraton: ["villager"], barracks: ["spearman","archer","swordsman","gunner"], temple: ["elephant"] };
+        (trains[b.type] || []).forEach(function(t){
+          var ut = UNIT_TYPES[t];
+          var locked = (ut.age || 1) > s.age;
+          var full = popUsed(s, "player") + ut.pop > popCap(s, "player");
+          var cost = JSON.parse(JSON.stringify(ut.cost));
+          if (t === "villager" && s.pf.bonus.villagerCost) cost.rice = Math.round(cost.rice * s.pf.bonus.villagerCost);
+          if (t === "elephant" && s.pf.bonus.elephantCost && cost.gold) cost.gold = Math.round(cost.gold * s.pf.bonus.elephantCost);
+          cmdBtn("Train " + ut.name, locked ? "Needs Age " + ["I","II","III","IV"][ut.age - 1] : costText(cost) + " · " + ut.time + "s",
+            function(){
+              if (!canAfford(s.res, cost)) { alertMsg("Not enough goods for " + ut.name + ".", "info"); return; }
+              if (popUsed(s, "player") + ut.pop > popCap(s, "player")) { alertMsg("Build more Houses. The people cap is full.", "info"); return; }
+              pay(s.res, cost); b.queue.push(t); refreshHUD();
+            }, { disabled: locked || !b.built,
+                 tip: "Train one " + ut.name + ". Cost: " + costText(cost) + ". Time: " + ut.time + " seconds. Health " + ut.hp + ". Attack " + ut.atk + ". The unit walks out of this building." });
+        });
+        if (b.queue.length) cmdBtn("Cancel last in queue", "", function(){ var t = b.queue.pop(); if (t && b.queue.length === 0) b.qt = 0; refreshHUD(); });
+        return;
+      }
+      if (sel.length){
+        var first = sel[0];
+        var counts = {};
+        sel.forEach(function(u){ counts[u.type] = (counts[u.type] || 0) + 1; });
+        var parts = Object.keys(counts).map(function(k){ return counts[k] + " " + UNIT_TYPES[k].name; });
+        card.innerHTML = "<h3>" + (sel.length === 1 ? UNIT_TYPES[first.type].name : sel.length + " units") + "</h3>" +
+          "<p>" + parts.join(" · ") + "</p>" +
+          (sel.length === 1 ? "<div class='hpbar'><div style='width:" + Math.max(0, first.hp / first.maxHp * 100) + "%'></div></div><p>Health " + Math.ceil(first.hp) + " of " + first.maxHp + ". Attack " + UNIT_TYPES[first.type].atk + ".</p>" : "<p>Right-click a target to give an order.</p>");
+        cmdBtn("Stop", "", function(){ sel.forEach(function(u){ u.state = "idle"; u.target = null; }); }, { tip: "Stop. The selected units halt and wait for a new order." });
+        var hasVillager = sel.some(function(u){ return u.type === "villager"; });
+        if (hasVillager){
+          ["house","farm","barracks","temple","tower","market","wonder"].forEach(function(t){
+            var bt2 = BUILD_TYPES[t];
+            var locked2 = (bt2.age || 1) > s.age;
+            var cost2 = JSON.parse(JSON.stringify(bt2.cost));
+            if (t === "wonder" && s.pf.bonus.wonderStone && cost2.stone) cost2.stone = Math.round(cost2.stone * s.pf.bonus.wonderStone);
+            cmdBtn("Build " + bt2.name, locked2 ? "Needs Age " + ["I","II","III","IV"][bt2.age - 1] : costText(cost2),
+              function(){ s.placeType = t; $("build-banner").style.display = "block"; refreshSelectionCard(); },
+              { disabled: locked2, armed: s.placeType === t,
+                tip: bt2.desc + " Cost: " + costText(cost2) + ". Click this button. Then click a place on the map. Green ghost means the place fits. Red ghost means the place is blocked." });
+          });
+          cmdBtn("Repair / Build site", "Select, then click a site", function(){
+            alertMsg("Now click a building site or a hurt building.", "info");
+            s.repairMode = true;
+          });
+        }
+        return;
+      }
+      if (s.selNode){
+        var n = s.selNode;
+        card.innerHTML = "<h3>" + NODE_TYPES[n.type].name + "</h3><p>Goods left: " + Math.ceil(n.amount) + " " + n.res + ".</p><p>Select a villager. Right-click here to gather.</p>";
+        return;
+      }
+      card.innerHTML = "<h3>Nothing selected</h3><p>Click a unit or a building. Drag to select a group of units.</p><p>Press <b>H</b> for the Kraton. Press <b>.</b> for an idle villager.</p>";
+    }
+
+    function canPlace(type, tx, ty){
+      var s = G, bt = BUILD_TYPES[type];
+      if (tx < 1 || ty < 1 || tx + bt.w > MAPW - 1 || ty + bt.h > MAPH - 1) return false;
+      for (var y = ty; y < ty + bt.h; y++) for (var x = tx; x < tx + bt.w; x++) if (s.water.indexOf(x + "," + y) >= 0) return false;
+      for (var i = 0; i < s.buildings.length; i++){ var b = s.buildings[i]; if (b.dead) continue;
+        if (tx < b.tx + b.w && tx + bt.w > b.tx && ty < b.ty + b.h && ty + bt.h > b.ty) return false; }
+      return true;
+    }
+    function tryPlace(wx, wy){
+      var s = G, type = s.placeType; if (!type) return;
+      var tx = Math.floor(wx / TILE), ty = Math.floor(wy / TILE);
+      var bt = BUILD_TYPES[type];
+      var cost = JSON.parse(JSON.stringify(bt.cost));
+      if (type === "wonder" && s.pf.bonus.wonderStone && cost.stone) cost.stone = Math.round(cost.stone * s.pf.bonus.wonderStone);
+      if (!canPlace(type, tx, ty)){ alertMsg("No room there. Pick a clear flat place.", "info"); return; }
+      if (!canAfford(s.res, cost)){ alertMsg("Not enough goods for " + bt.name + ".", "info"); return; }
+      pay(s.res, cost);
+      var b = addBuilding(s, "player", type, tx, ty, false);
+      s.selected.filter(function(u){ return u.type === "villager"; }).forEach(function(u){ orderBuild(u, b); });
+      s.placeType = null; $("build-banner").style.display = "none";
+      blip(440, .06, "square"); refreshHUD();
+    }
+
+    /* ============================================================
+       INPUT
+       ============================================================ */
+    function toWorld(cx, cy){
+      var r = canvas.getBoundingClientRect();
+      var lx = cx - r.left + G.cam.x, ly = cy - r.top + G.cam.y;
+      var rc = raycastGround(cx, cy);
+      var wx = rc ? clamp(rc.x, 0, MAPW * TILE) : lx;
+      var wy = rc ? clamp(rc.y, 0, MAPH * TILE) : ly;
+      return { x: wx, y: wy, lx: lx, ly: ly, sx: cx - r.left, sy: cy - r.top };
+    }
+    canvas.addEventListener("contextmenu", function(e){ e.preventDefault(); });
+    canvas.addEventListener("wheel", function(e){
+      if (!G) return;
+      e.preventDefault();
+      G.view.zoom = clamp(G.view.zoom * (e.deltaY < 0 ? 1.12 : 0.89), 0.5, 2.4);
+    }, { passive: false });
+    canvas.addEventListener("pointerdown", function(e){
+      if (!G || G.over) return;
+      canvas.setPointerCapture(e.pointerId);
+      var w = toWorld(e.clientX, e.clientY);
+      G.mouse.down = true; G.mouse.moved = false; G.mouse.sx = w.sx; G.mouse.sy = w.sy; G.mouse.x = w.sx; G.mouse.y = w.sy;
+      G.mouse.wx = w.x; G.mouse.wy = w.y; G.mouse.in = true;
+      G.mouse.isRight = (e.button === 2); G.mouse.isTouch = (e.pointerType === "touch");
+      G.mouse.rotating = (e.button === 1);
+      G.mouse.downT = performance.now();
+      if (e.button === 2){
+        if (G.placeType){ G.placeType = null; $("build-banner").style.display = "none"; refreshSelectionCard(); return; }
+        if (G.selected.length){
+          var seen = pickEntity(w.x, w.y, "enemy") || pickNode(w.x, w.y) || pickFarm(w.x, w.y) || pickSite(w.x, w.y);
+          var seenL = pickEntity(w.lx, w.ly, "enemy") || pickNode(w.lx, w.ly) || pickFarm(w.lx, w.ly) || pickSite(w.lx, w.ly);
+          if (!seen && seenL) issueSmartOrder(G.selected, w.lx, w.ly);
+          else issueSmartOrder(G.selected, w.x, w.y);
+        }
+      }
+    });
+    canvas.addEventListener("pointermove", function(e){
+      if (!G) return;
+      var w = toWorld(e.clientX, e.clientY);
+      if (G.mouse.rotating && G.mouse.down){ G.view.rot += e.movementX * 0.006; G.mouse.x = w.sx; G.mouse.y = w.sy; return; }
+      G.mouse.x = w.sx; G.mouse.y = w.sy; G.mouse.wx = w.x; G.mouse.wy = w.y; G.mouse.in = true;
+      if (G.mouse.down && Math.abs(w.sx - G.mouse.sx) + Math.abs(w.sy - G.mouse.sy) > 8) G.mouse.moved = true;
+      var sb = $("sel-box");
+      if (sb){
+        if (G.mouse.down && G.mouse.moved && !G.mouse.isRight){
+          sb.style.display = "block";
+          sb.style.left = Math.min(G.mouse.sx, w.sx) + "px"; sb.style.top = Math.min(G.mouse.sy, w.sy) + "px";
+          sb.style.width = Math.abs(w.sx - G.mouse.sx) + "px"; sb.style.height = Math.abs(w.sy - G.mouse.sy) + "px";
+        } else sb.style.display = "none";
+      }
+      // edge pan for mouse
+      if (e.pointerType === "mouse" && !G.paused){
+        var W = canvas.clientWidth, H = canvas.clientHeight, m = 14;
+        G.edge = { l: w.sx < m, r: w.sx > W - m, u: w.sy < m, d: w.sy > H - m };
+      }
+    });
+    canvas.addEventListener("pointerleave", function(){ if (G){ G.mouse.in = false; G.edge = null; } });
+    canvas.addEventListener("pointerup", function(e){
+      if (!G || G.over) return;
+      var wasDown = G.mouse.down; G.mouse.down = false; G.mouse.rotating = false;
+      var sb0 = $("sel-box"); if (sb0) sb0.style.display = "none";
+      if (!wasDown || G.mouse.isRight) return;
+      var w = toWorld(e.clientX, e.clientY);
+      if (G.placeType){
+        if (canPlace(G.placeType, Math.floor(w.x / TILE), Math.floor(w.y / TILE))) tryPlace(w.x, w.y);
+        else tryPlace(w.lx, w.ly);
+        return;
+      }
+      if (G.repairMode){
+        G.repairMode = false;
+        var site = pickSite(w.x, w.y);
+        var hurt = null;
+        G.buildings.forEach(function(b){ if (b.owner === "player" && !b.dead && b.built && b.hp < b.maxHp && w.x >= b.x && w.x <= b.x + b.w*TILE && w.y >= b.y && w.y <= b.y + b.h*TILE) hurt = b; });
+        var tgt = site || hurt;
+        if (tgt) G.selected.filter(function(u){ return u.type === "villager"; }).forEach(function(u){ orderBuild(u, tgt); });
+        return;
+      }
+      if (G.mouse.moved){
+        // box select
+        var x1 = Math.min(G.mouse.sx, w.sx) + G.cam.x, x2 = Math.max(G.mouse.sx, w.sx) + G.cam.x;
+        var y1 = Math.min(G.mouse.sy, w.sy) + G.cam.y, y2 = Math.max(G.mouse.sy, w.sy) + G.cam.y;
+        var picked = G.units.filter(function(u){ return u.owner === "player" && !u.dead && u.x >= x1 && u.x <= x2 && u.y >= y1 && u.y <= y2; });
+        if (picked.length){ G.selected = picked; G.selBuilding = null; G.selNode = null; blip(740, .04, "square"); }
+        refreshSelectionCard(); return;
+      }
+      // single tap / click: try the 3D pick point first, then the flat point
+      var now = performance.now();
+      var pts = [[w.x, w.y], [w.lx, w.ly]];
+      for (var pass = 0; pass < pts.length; pass++){
+        var px = pts[pass][0], py = pts[pass][1];
+        var own = null, bd = 30;
+        G.units.forEach(function(u){ if (u.owner === "player" && !u.dead){ var d = dist(px, py, u.x, u.y); if (d < bd){ bd = d; own = u; } } });
+        // touch: second tap on a target is an order
+        if (pass === 0 && G.mouse.isTouch && G.selected.length && !own && now - (G.lastSelectT || 0) > 300){
+          issueSmartOrder(G.selected, px, py); return;
+        }
+        if (own){ G.selected = [own]; G.selBuilding = null; G.selNode = null; G.lastSelectT = now; blip(740, .04, "square"); refreshSelectionCard(); return; }
+        var bsel = null;
+        G.buildings.forEach(function(b){ if (b.owner === "player" && !b.dead && px >= b.x && px <= b.x + b.w*TILE && py >= b.y && py <= b.y + b.h*TILE) bsel = b; });
+        if (bsel){ G.selected = []; G.selBuilding = bsel; G.selNode = null; blip(700, .04, "square"); refreshSelectionCard(); return; }
+        var node = pickNode(px, py);
+        if (node){ G.selected = []; G.selBuilding = null; G.selNode = node; refreshSelectionCard(); return; }
+      }
+      G.selected = []; G.selBuilding = null; G.selNode = null; refreshSelectionCard();
+    });
+    mm.addEventListener("pointerdown", function(e){
+      if (!G) return;
+      var r = mm.getBoundingClientRect();
+      var fx = (e.clientX - r.left) / r.width, fy = (e.clientY - r.top) / r.height;
+      G.cam.x = clamp(fx * MAPW * TILE - canvas.clientWidth / 2, 0, MAPW * TILE - canvas.clientWidth);
+      G.cam.y = clamp(fy * MAPH * TILE - canvas.clientHeight / 2, 0, MAPH * TILE - canvas.clientHeight);
+    });
+    window.addEventListener("keydown", function(e){
+      if (!G) return;
+      var tag = (e.target && e.target.tagName) || "";
+      if (tag === "INPUT" || tag === "TEXTAREA" || tag === "SELECT") return;
+      G.keys[e.key.toLowerCase()] = true;
+      if (e.key === " "){ e.preventDefault(); togglePause(); }
+      if (e.key.toLowerCase() === "q") G.view.rot += 0.3;
+      if (e.key.toLowerCase() === "e") G.view.rot -= 0.3;
+      if (e.key === "Escape"){
+        if (G.placeType){ G.placeType = null; $("build-banner").style.display = "none"; refreshSelectionCard(); }
+        else if ($("overlay-codex").classList.contains("open")) closeOverlay("overlay-codex");
+        else togglePause();
+      }
+      if (e.key.toLowerCase() === "h"){ var k = playerKraton(G); if (k){ G.selBuilding = k; G.selected = []; G.cam.x = clamp(k.x - canvas.clientWidth/2, 0, MAPW*TILE - canvas.clientWidth); G.cam.y = clamp(k.y - canvas.clientHeight/2, 0, MAPH*TILE - canvas.clientHeight); refreshSelectionCard(); } }
+      if (e.key === "."){ var idle = G.units.find(function(u){ return u.owner === "player" && u.type === "villager" && u.state === "idle" && !u.dead; }); if (idle){ G.selected = [idle]; G.selBuilding = null; G.cam.x = clamp(idle.x - canvas.clientWidth/2, 0, MAPW*TILE - canvas.clientWidth); G.cam.y = clamp(idle.y - canvas.clientHeight/2, 0, MAPH*TILE - canvas.clientHeight); refreshSelectionCard(); } }
+    });
+    window.addEventListener("keyup", function(e){ if (G) G.keys[e.key.toLowerCase()] = false; });
+
+    function stepCamera(dt){
+      var s = G; if (!s) return;
+      var sp = 620 * dt, k = s.keys;
+      if (k["w"] || k["arrowup"]) s.cam.y -= sp;
+      if (k["s"] || k["arrowdown"]) s.cam.y += sp;
+      if (k["a"] || k["arrowleft"]) s.cam.x -= sp;
+      if (k["d"] || k["arrowright"]) s.cam.x += sp;
+      if (s.edge){ if (s.edge.l) s.cam.x -= sp; if (s.edge.r) s.cam.x += sp; if (s.edge.u) s.cam.y -= sp; if (s.edge.d) s.cam.y += sp; }
+      s.cam.x = clamp(s.cam.x, 0, Math.max(0, MAPW * TILE - canvas.clientWidth));
+      s.cam.y = clamp(s.cam.y, 0, Math.max(0, MAPH * TILE - canvas.clientHeight));
+    }
+
+    /* ============================================================
+       SOUND (synth, no files)
+       ============================================================ */
+    var AC = null, soundOn = true;
+    function blip(freq, dur, type){
+      if (!soundOn) return;
+      try {
+        if (!AC) AC = new (window.AudioContext || window.webkitAudioContext)();
+        if (AC.state === "suspended") AC.resume();
+        var o = AC.createOscillator(), g = AC.createGain();
+        o.type = type || "sine"; o.frequency.value = freq;
+        g.gain.setValueAtTime(0.05, AC.currentTime);
+        g.gain.exponentialRampToValueAtTime(0.001, AC.currentTime + dur);
+        o.connect(g); g.connect(AC.destination); o.start(); o.stop(AC.currentTime + dur);
+      } catch (err) { /* sound is optional */ }
+    }
+
+    /* ============================================================
+       GAME FLOW
+       ============================================================ */
+    var currentCfg = null;
+    function startMatch(cfg){
+      currentCfg = cfg;
+      stopLoop();
+      showScreen("screen-game");
+      resizeCanvas();
+      G = newGame(cfg);
+      refreshHUD(); refreshSelectionCard(); drawMinimap();
+      updateHint(); updateGuide();
+      alertMsg(cfg.title ? cfg.title + ". " + cfg.goalText : "Skirmish. Destroy the enemy Kraton.", "info");
+      G.lastTs = performance.now();
+      G.raf = requestAnimationFrame(loop);
+    }
+    function stopLoop(){ if (G && G.raf) cancelAnimationFrame(G.raf); }
+    var shadowsOn = true;
+    function adaptShadows(frameMs){
+      if (!T3.renderer) return;
+      if (shadowsOn && frameMs > 50){
+        shadowsOn = false;
+        T3.renderer.shadowMap.enabled = false;
+        if (T3.sun) T3.sun.castShadow = false;
+      } else if (!shadowsOn && frameMs < 25){
+        shadowsOn = true;
+        T3.renderer.shadowMap.enabled = true;
+        if (T3.sun) T3.sun.castShadow = true;
+      }
+    }
+    function loop(ts){
+      if (!G) return;
+      var frameMs = ts - G.lastTs;
+      var dt = Math.min(0.5, frameMs / 1000 || 0.016);
+      G.lastTs = ts;
+      adaptShadows(frameMs);
+      stepCamera(dt);
+      step(dt);
+      render();
+      // live queue progress in selection card
+      if (G.selBuilding && G.selBuilding.queue.length) refreshSelectionCardThrottled();
+      G.raf = requestAnimationFrame(loop);
+    }
+    var selCardT = 0;
+    function refreshSelectionCardThrottled(){ var now = performance.now(); if (now - selCardT > 500){ selCardT = now; refreshSelectionCard(); } }
+    function togglePause(){
+      if (!G || G.over) return;
+      G.paused = !G.paused;
+      $("overlay-pause").classList.toggle("open", G.paused);
+    }
+    function endGame(win, text){
+      var s = G; if (!s || s.over) return;
+      s.over = true; s.result = win;
+      blip(win ? 620 : 160, .3, "sine");
+      $("result-title").textContent = win ? "Victory" : "Defeat";
+      $("result-text").textContent = text;
+      $("result-history").textContent = s.cfg.historyNote || "The record stands. Play can change the end of a match. Play does not change the past.";
+      $("result-stats").innerHTML =
+        "<div><b>" + fmtTime(s.t) + "</b>Time</div>" +
+        "<div><b>" + s.stats.trained + "</b>Units trained</div>" +
+        "<div><b>" + s.stats.built + "</b>Buildings built</div>" +
+        "<div><b>" + s.stats.killed + "</b>Foes felled</div>" +
+        "<div><b>" + s.stats.lost + "</b>Losses</div>";
+      setTimeout(function(){ $("overlay-result").classList.add("open"); }, 500);
+    }
+
+    /* ============================================================
+       SCREENS + UI WIRING
+       ============================================================ */
+    function showScreen(id){
+      document.querySelectorAll(".screen").forEach(function(sc){ sc.classList.toggle("active", sc.id === id); });
+      window.scrollTo(0, 0);
+    }
+    function openOverlay(id){ $(id).classList.add("open"); }
+    function closeOverlay(id){ $(id).classList.remove("open"); }
+    document.querySelectorAll("[data-close]").forEach(function(b){ b.addEventListener("click", function(){ closeOverlay(b.getAttribute("data-close")); }); });
+    document.querySelectorAll("[data-nav]").forEach(function(b){ b.addEventListener("click", function(){ showScreen("screen-" + b.getAttribute("data-nav")); }); });
+
+    // menu factions strip
+    var mf = $("menu-factions");
+    FACTIONS.forEach(function(f){
+      var d = document.createElement("div"); d.className = "faction-mini";
+      d.innerHTML = "<span class='ficon' aria-hidden='true'></span><h3><span class='swatch'></span></h3><p class='small muted' style='margin:2px 0'></p><p class='small' style='margin:2px 0'></p>";
+      var fic = d.querySelector(".ficon"); fic.style.background = f.color; fic.textContent = f.name.charAt(0);
+      d.querySelector(".swatch").style.background = f.color;
+      d.querySelector("h3").appendChild(document.createTextNode(f.name));
+      d.querySelectorAll("p")[0].textContent = f.capital + " · " + f.era;
+      d.querySelectorAll("p")[1].textContent = f.bonusText;
+      mf.appendChild(d);
+    });
+    $("menu-btn-campaign").addEventListener("click", function(){ showScreen("screen-missions"); });
+    $("menu-btn-skirmish").addEventListener("click", function(){ showScreen("screen-skirmish"); });
+    $("menu-btn-codex").addEventListener("click", function(){ openOverlay("overlay-codex"); });
+    $("menu-btn-how").addEventListener("click", function(){ openOverlay("overlay-how"); });
+
+    // missions list
+    var ml = $("mission-list");
+    MISSIONS.forEach(function(m){
+      var pf = factionById(m.player);
+      var b = document.createElement("button"); b.type = "button"; b.className = "card mission-card";
+      b.innerHTML = "<h3></h3><p class='small muted'></p><p class='small'></p><p class='small'></p>";
+      b.querySelector("h3").textContent = m.title;
+      b.querySelectorAll("p")[0].textContent = "Year: " + m.year + " · You play " + pf.name + " · Foe: " + m.enemyName;
+      b.querySelectorAll("p")[1].textContent = "Goal: " + m.goalText;
+      b.querySelectorAll("p")[2].innerHTML = m.dispute ? "<span class='chip disputed'>Disputed</span> This mission has a dispute note." : "";
+      b.addEventListener("click", function(){ openBrief(m); });
+      ml.appendChild(b);
+    });
+    var briefMission = null;
+    function openBrief(m){
+      briefMission = m;
+      var pf = factionById(m.player);
+      $("brief-title").textContent = m.title;
+      var ul = $("brief-facts"); ul.innerHTML = "";
+      m.facts.forEach(function(f){ var li = document.createElement("li"); li.textContent = f; ul.appendChild(li); });
+      if (m.dispute){ var li2 = document.createElement("li"); li2.innerHTML = "<span class='chip disputed'>Disputed</span> "; li2.appendChild(document.createTextNode(m.dispute)); ul.appendChild(li2); }
+      $("brief-goal").textContent = m.goalText;
+      $("brief-lose").textContent = "You lose if the enemy destroys your Kraton.";
+      $("brief-sides").innerHTML = "";
+      var p1 = document.createElement("p"); p1.innerHTML = "<span class='swatch'></span>"; p1.querySelector(".swatch").style.background = pf.color;
+      p1.appendChild(document.createTextNode("You: " + pf.name + ". " + pf.bonusText));
+      var p2 = document.createElement("p"); p2.textContent = "Foe: " + m.enemyName + ".";
+      $("brief-sides").appendChild(p1); $("brief-sides").appendChild(p2);
+      showScreen("screen-brief");
+    }
+    $("brief-start").addEventListener("click", function(){
+      if (!briefMission) return;
+      var m = briefMission;
+      startMatch({ title: m.title, player: m.player, enemy: m.enemy, map: m.map, goalType: m.goalType,
+        goalGold: m.goalGold || 0, goalAge: m.goalAge || 1, goalTime: m.goalTime || 0, level: m.level || 1,
+        guided: m.id === "m1",
+        goalText: m.goalText, historyNote: m.history + (m.dispute ? " " + m.dispute : "") });
+    });
+
+    // skirmish setup
+    var skirmishPick = "majapahit";
+    var sf = $("skirmish-factions");
+    function renderSkirmishPicks(){
+      sf.innerHTML = "";
+      FACTIONS.forEach(function(f){
+        var b = document.createElement("button"); b.type = "button"; b.className = "card pick-card";
+        b.setAttribute("aria-pressed", f.id === skirmishPick ? "true" : "false");
+        b.innerHTML = "<span class='ficon' aria-hidden='true'></span><h3 style='margin:0 0 3px'><span class='swatch'></span></h3><p class='small muted' style='margin:2px 0'></p><p class='small' style='margin:2px 0'></p>";
+        var fic2 = b.querySelector(".ficon"); fic2.style.background = f.color; fic2.textContent = f.name.charAt(0);
+        b.querySelector(".swatch").style.background = f.color;
+        b.querySelector("h3").appendChild(document.createTextNode(f.name));
+        b.querySelectorAll("p")[0].textContent = f.capital;
+        b.querySelectorAll("p")[1].textContent = f.bonusText;
+        b.addEventListener("click", function(){ skirmishPick = f.id; renderSkirmishPicks(); renderSkirmishDetail(); });
+        sf.appendChild(b);
+      });
+    }
+    var se = $("skirmish-enemy");
+    FACTIONS.forEach(function(f){ var o = document.createElement("option"); o.value = f.id; o.textContent = f.name; se.appendChild(o); });
+    se.value = "aceh";
+    function renderSkirmishDetail(){
+      var f = factionById(skirmishPick);
+      $("skirmish-detail").innerHTML = "<h3 style='margin-top:0'>" + f.name + "</h3><p>" + f.blurb + "</p><p class='small muted'>Era: " + f.era + ". Capital: " + f.capital + ".</p><p class='small'><b>Bonus:</b> " + f.bonusText + "</p>";
+    }
+    renderSkirmishPicks(); renderSkirmishDetail();
+    $("skirmish-start").addEventListener("click", function(){
+      var enemy = se.value === skirmishPick ? (skirmishPick === "aceh" ? "majapahit" : "aceh") : se.value;
+      startMatch({ title: "Skirmish", player: skirmishPick, enemy: enemy, map: $("skirmish-map").value,
+        goalType: "destroy", level: parseFloat($("skirmish-level").value) || 1,
+        goalText: "Destroy the enemy Kraton. Guard your own Kraton.",
+        historyNote: "A skirmish is free play. It does not copy one event. The factions and the bonuses come from the record." });
+    });
+
+    // codex
+    function renderCodex(filter){
+      var list = $("codex-list"); list.innerHTML = "";
+      CODEX.forEach(function(c){
+        if (filter && (c.t + " " + c.body).toLowerCase().indexOf(filter.toLowerCase()) < 0) return;
+        var d = document.createElement("div"); d.className = "card codex-item";
+        var chip = c.tag === "disputed" ? "<span class='chip disputed'>Disputed</span>" : "<span class='chip fact'>Fact</span>";
+        d.innerHTML = "<h3></h3><p></p><p class='source-note'></p>";
+        d.querySelector("h3").textContent = c.t + " ";
+        d.querySelector("h3").insertAdjacentHTML("beforeend", chip);
+        d.querySelectorAll("p")[0].textContent = c.body;
+        d.querySelector(".source-note").textContent = c.src;
+        list.appendChild(d);
+      });
+      if (!list.children.length) list.innerHTML = "<p class='muted'>No entry fits the search. Clear the search to see all entries.</p>";
+    }
+    renderCodex("");
+    $("codex-search").addEventListener("input", function(e){ renderCodex(e.target.value); });
+
+    // in-game buttons
+    $("btn-age").addEventListener("click", function(){
+      var s = G; if (!s || s.age >= 4 || s.ageBusy) return;
+      var c = AGES[s.age].cost;
+      if (!canAfford(s.res, c)){ alertMsg("The age rite needs " + costText(c) + ".", "info"); return; }
+      pay(s.res, c); s.ageBusy = true; s.ageTimer = 25;
+      alertMsg("The age rite starts. The court prepares the new age.", "info"); refreshHUD();
+    });
+    $("btn-pause").addEventListener("click", togglePause);
+    $("btn-objective").addEventListener("click", function(){ $("objective-card").classList.toggle("show"); });
+    $("btn-codex").addEventListener("click", function(){ openOverlay("overlay-codex"); });
+    $("btn-sound").addEventListener("click", function(){
+      soundOn = !soundOn; this.textContent = soundOn ? "Sound on" : "Sound off"; this.setAttribute("aria-pressed", soundOn ? "true" : "false");
+      if (soundOn) blip(660, .06, "sine");
+    });
+    $("view-rot-l").addEventListener("click", function(){ if (G) G.view.rot += 0.35; });
+    $("view-rot-r").addEventListener("click", function(){ if (G) G.view.rot -= 0.35; });
+    $("view-zoom-in").addEventListener("click", function(){ if (G) G.view.zoom = clamp(G.view.zoom * 1.2, 0.5, 2.4); });
+    $("view-zoom-out").addEventListener("click", function(){ if (G) G.view.zoom = clamp(G.view.zoom * 0.83, 0.5, 2.4); });
+    $("guide-hide").addEventListener("click", function(){ if (G){ G.guideHidden = true; updateGuide(); } });
+    $("pause-resume").addEventListener("click", togglePause);
+    $("pause-restart").addEventListener("click", function(){ closeOverlay("overlay-pause"); if (currentCfg){ if (G) G.paused = false; startMatch(currentCfg); } });
+    $("pause-quit").addEventListener("click", function(){ closeOverlay("overlay-pause"); stopLoop(); G = null; showScreen("screen-menu"); });
+    $("pause-how").addEventListener("click", function(){ openOverlay("overlay-how"); });
+    $("pause-codex").addEventListener("click", function(){ openOverlay("overlay-codex"); });
+    $("result-again").addEventListener("click", function(){ closeOverlay("overlay-result"); if (currentCfg) startMatch(currentCfg); });
+    $("result-menu").addEventListener("click", function(){ closeOverlay("overlay-result"); stopLoop(); G = null; showScreen("screen-menu"); });
+
+    /* ---------------- menu hero 3D scene ---------------- */
+    (function initHero(){
+      var hc = document.getElementById("hero-3d");
+      if (!hc || !window.THREE) return;
+      try {
+        var renderer = new THREE.WebGLRenderer({ canvas: hc, antialias: true });
+        renderer.setPixelRatio(Math.min(2, window.devicePixelRatio || 1));
+        renderer.shadowMap.enabled = true; renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+        var scene = new THREE.Scene();
+        scene.background = new THREE.Color(0xa9c9de);
+        scene.fog = new THREE.Fog(0xc4d8cf, 90, 220);
+        var camera = new THREE.PerspectiveCamera(44, 3.4, 0.1, 600);
+        scene.add(new THREE.HemisphereLight(0xfff1d6, 0x4f6a3a, 0.85));
+        var sun = new THREE.DirectionalLight(0xffdfae, 1.1);
+        sun.position.set(30, 46, 18); sun.castShadow = true; scene.add(sun);
+        var fake = { water: ["30,40","31,40","30,41","31,41","29,40","32,41"] };
+        var geo = new THREE.PlaneGeometry(150, 150, 60, 60); geo.rotateX(-Math.PI / 2);
+        var pos = geo.attributes.position, cols = [], col = new THREE.Color();
+        for (var i = 0; i < pos.count; i++){
+          var vx = pos.getX(i), vz = pos.getZ(i);
+          var tx = Math.floor((vx / 2) + 36), ty = Math.floor((vz / 2) + 36);
+          var h = tileHeight(fake, tx, ty) * 2.2;
+          var river = Math.abs(vx + 14 - vz * 0.22) < 5 ? -1.4 : 0;
+          pos.setY(i, Math.max(h + river, -1.2));
+          if (river) col.setHex(0xb3a06d); else if (h > 1.6) col.setHex(0x8d8578); else col.setHSL(0.29, 0.42, 0.3 + ((tx * 7 + ty * 3) % 9) / 60);
+          cols.push(col.r, col.g, col.b);
+        }
+        geo.setAttribute("color", new THREE.Float32BufferAttribute(cols, 3));
+        geo.computeVertexNormals();
+        var terr = new THREE.Mesh(geo, new THREE.MeshStandardMaterial({ vertexColors: true, roughness: 1 }));
+        terr.receiveShadow = true; scene.add(terr);
+        var wgeo = new THREE.PlaneGeometry(150, 150); wgeo.rotateX(-Math.PI / 2);
+        var water = new THREE.Mesh(wgeo, new THREE.MeshPhongMaterial({ color: 0x2f7d99, transparent: true, opacity: 0.75, shininess: 90 }));
+        water.position.y = -0.55; scene.add(water);
+        function heroBuilding(x, z, fac, kind){
+          var g = new THREE.Group();
+          if (kind === "temple"){
+            for (var k = 0; k < 4; k++) g.add(box3(9 - k * 1.7, 1.1, 9 - k * 1.7, mat3(0x8d8175), 0, 0.55 + k * 1.1, 0));
+            var top = new THREE.Mesh(new THREE.SphereGeometry(0.9, 10, 8), mat3(0xe3b93c, 0.35)); top.position.y = 5.2; g.add(top);
+          } else {
+            g.add(box3(7, 2.4, 6, mat3(0xe6d3a3), 0, 1.2, 0));
+            for (var t = 0; t < 3; t++){
+              var roof = new THREE.Mesh(new THREE.ConeGeometry(5.4 - t * 1.2, 2.1, 4), facDarkMat3(fac));
+              roof.rotation.y = Math.PI / 4; roof.position.y = 3.4 + t * 1.3; roof.castShadow = true; g.add(roof);
+            }
+            var bn = banner3(fac, 5); bn.position.set(-4.4, 0, 2.4); g.add(bn);
+          }
+          g.position.set(x, 0.1, z); scene.add(g);
+        }
+        heroBuilding(-16, -6, factionById("majapahit"), "kraton");
+        heroBuilding(14, -16, factionById("mataram"), "temple");
+        heroBuilding(20, 8, factionById("srivijaya"), "kraton");
+        heroBuilding(-4, 14, factionById("aceh"), "house");
+        for (var tr = 0; tr < 26; tr++){
+          var tg = new THREE.Group();
+          var trunk = new THREE.Mesh(new THREE.CylinderGeometry(0.22, 0.3, 1.6, 6), mat3(0x5d4028)); trunk.position.y = 0.8; tg.add(trunk);
+          var fol = new THREE.Mesh(new THREE.SphereGeometry(1.6, 8, 6), mat3(0x2c5b2a)); fol.position.y = 2.6; fol.castShadow = true; tg.add(fol);
+          tg.position.set(-60 + Math.random() * 120, 0.4, -55 + Math.random() * 110);
+          if (Math.abs(tg.position.x + 14 - tg.position.z * 0.22) > 7) scene.add(tg);
+        }
+        var heroRaf = 0;
+        var heroStart = performance.now();
+        function heroLoop(now){
+          heroRaf = requestAnimationFrame(heroLoop);
+          if (!document.getElementById("screen-menu").classList.contains("active")) return;
+          var wpx = hc.clientWidth || 1120, hpx = hc.clientHeight || 300;
+          var sz = renderer.getSize(new THREE.Vector2());
+          if (Math.abs(sz.x - wpx) > 2) renderer.setSize(wpx, hpx, false);
+          camera.aspect = wpx / hpx; camera.updateProjectionMatrix();
+          var a = (now - heroStart) / 1000 * 0.07;
+          camera.position.set(Math.sin(a) * 52, 30, Math.cos(a) * 52);
+          camera.lookAt(0, 0, 0);
+          water.position.y = -0.55 + Math.sin(now / 700) * 0.05;
+          renderer.render(scene, camera);
+        }
+        heroRaf = requestAnimationFrame(heroLoop);
+        var heroWatch = new MutationObserver(function(){
+          if (document.getElementById("screen-menu").classList.contains("active")){
+            if (!heroRaf) heroRaf = requestAnimationFrame(heroLoop);
+          } else if (heroRaf){
+            cancelAnimationFrame(heroRaf); heroRaf = 0;
+          }
+        });
+        heroWatch.observe(document.getElementById("screen-menu"), { attributes: true, attributeFilter: ["class"] });
+      } catch (err) { /* the menu still works with no hero scene */ }
+    })();
+
+    resizeCanvas();
+    </script>
+  </body>
+</html>
